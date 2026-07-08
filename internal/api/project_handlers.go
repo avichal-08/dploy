@@ -5,6 +5,7 @@ import (
 
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
+	"github.com/avichal-08/dploy/internal/pipeline"
 )
 
 type CreateProjectPayload struct {
@@ -41,7 +42,7 @@ func HandleCreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	db.DB.Create(&deployment)
 
-	// go triggerPipeline(project, deployment)
+	go pipeline.Start(project, deployment)
 
 	WriteJSON(w, http.StatusCreated, project)
 }
