@@ -12,7 +12,7 @@ type CreateProjectPayload struct {
 	UserId        string `json:"user_id"`
 	Name          string `json:"name"`
 	RepositoryURL string `json:"repository_url"`
-	Framework     string `json:"framework"`
+	// Framework     string `json:"framework"`
 }
 
 func HandleCreateProject(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +27,7 @@ func HandleCreateProject(w http.ResponseWriter, r *http.Request) {
 		UserID:        payload.UserId,
 		Name:          payload.Name,
 		RepositoryURL: payload.RepositoryURL,
-		Framework:     payload.Framework,
+		// Framework:     payload.Framework,
 	}
 
 	if err := db.DB.Create(&project).Error; err != nil {

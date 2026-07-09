@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -32,5 +33,15 @@ func Start(project models.Project, deployment models.Deployment) {
 	}
 
 	db.DB.Model(&deployment).Update("build_logs", "Repository cloned successfully.\n")
+
+	commitSHA, err := GetCommitSHA(buildDir)
+	if err != nil {
+		slog.Error("not able to get commit sha", "error", err)
+	}
+	db.DB.Model(&deployment).Update("commit_sha", commitSHA)
+
+	framework := DetectFramework(buildDir)
+
+	db.DB.Model(&project).Update("framework", framework)
 
 }

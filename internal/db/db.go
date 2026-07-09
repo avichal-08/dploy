@@ -1,8 +1,8 @@
 package db
 
 import (
-	"fmt"
 	"log"
+	"log/slog"
 
 	"github.com/avichal-08/dploy/internal/models"
 	"gorm.io/driver/postgres"
@@ -20,7 +20,7 @@ func Init(dsn string) {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	fmt.Println("Migrating database schema...")
+	slog.Info("migrating database schema...")
 	err = DB.AutoMigrate(
 		&models.User{},
 		&models.Project{},
@@ -28,16 +28,16 @@ func Init(dsn string) {
 	)
 
 	if err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
+		slog.Error("Failed to migrate database", "error", err)
 	}
 
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatalf("failed to get sql.DB: %v", err)
+		slog.Error("failed to get sql.DB", "error", err)
 	}
 
 	sqlDB.SetMaxOpenConns(20)
 	sqlDB.SetMaxIdleConns(10)
 
-	fmt.Println("Database connected and migrated successfully!")
+	slog.Info("Database connected and migrated successfully!")
 }
