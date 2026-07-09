@@ -22,6 +22,7 @@ type Project struct {
 	Framework     string    `gorm:"type:varchar(50)"`
 	BuildCommand  string    `gorm:"type:varchar(255)"`
 	RunCommand    string    `gorm:"type:varchar(255)"`
+	Status        string    `gorm:"type:varchar(50);default:'cloning'"`
 	ProductionURL string    `gorm:"type:text"`
 	CreatedAt     time.Time `gorm:"autoCreateTime"`
 

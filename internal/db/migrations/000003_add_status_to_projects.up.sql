@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN status VARCHAR(50) DEFAULT 'cloning';
