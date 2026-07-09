@@ -1,10 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"context"
+	"errors"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/avichal-08/dploy/internal/api"
 	"github.com/avichal-08/dploy/internal/db"
@@ -12,31 +16,73 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Warning: No .env file found")
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
+	if err := godotenv.Load(); err != nil {
+		slog.Warn("no .env file found")
 	}
 
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		log.Fatal("DATABASE_URL env is required")
+		slog.Error("DATABASE_URL environment variable is required")
+		os.Exit(1)
 	}
 
 	db.Init(dsn)
 
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("POST /api/projects", api.HandleCreateProject)
 	mux.HandleFunc("GET /api/projects/{id}", api.HandleGetProject)
-
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		api.WriteJSON(w, http.StatusOK, map[string]string{"status": "Dploy API is operational 🚀"})
+		api.WriteJSON(w, http.StatusOK, map[string]string{"status": "operational"})
 	})
 
-	port := ":8080"
-	fmt.Printf("Starting Dploy API on http://localhost%s\n", port)
+	corsMux := enableCORS(mux)
 
-	if err := http.ListenAndServe(port, mux); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	srv := &http.Server{
+		Addr:         ":8080",
+		Handler:      corsMux,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	}
+
+	go func() {
+		slog.Info("Starting Dploy API", "port", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("Server failed to start", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	shutdownChan := make(chan os.Signal, 1)
+	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
+	<-shutdownChan
+
+	slog.Info("shutting down gracefully")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("Server forced to shutdown", "error", err)
+	}
+
+	slog.Info("Server stopped.")
+}
+
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

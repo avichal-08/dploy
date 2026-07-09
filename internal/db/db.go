@@ -1,7 +1,6 @@
 package db
 
 import (
-	"log"
 	"log/slog"
 
 	"github.com/avichal-08/dploy/internal/models"
@@ -17,7 +16,7 @@ func Init(dsn string) {
 	DB, err = gorm.Open(postgres.Open(dsn))
 
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		slog.Error("Failed to connect to database", "error", err)
 	}
 
 	slog.Info("migrating database schema...")
