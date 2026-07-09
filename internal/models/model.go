@@ -6,7 +6,7 @@ import (
 
 type User struct {
 	ID        string    `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	GitHubID  string    `gorm:"type:varchar(255);uniqueIndex;not null"`
+	GithubID  string    `gorm:"type:varchar(255);uniqueIndex;not null"`
 	Email     string    `gorm:"type:varchar(255);uniqueIndex;not null"`
 	AvatarURL string    `gorm:"type:text"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`

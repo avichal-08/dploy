@@ -24,7 +24,7 @@ func main() {
 	db.Init(dsn)
 
 	mockUser := models.User{
-		GitHubID:  "github_12345678",
+		GithubID:  "github_12345678",
 		Email:     "founder@dploy.local",
 		AvatarURL: "https://avatars.githubusercontent.com/u/9919?v=4",
 	}
@@ -32,7 +32,7 @@ func main() {
 	result := db.DB.Create(&mockUser)
 
 	if result.Error != nil {
-		log.Fatalf("failed to create user (they might already exist): %v", result.Error)
+		log.Fatalf("failed to create user: %v", result.Error)
 	}
 
 	fmt.Printf("mock user id: %s\n", mockUser.ID)
