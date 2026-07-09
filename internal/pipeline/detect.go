@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -54,5 +55,6 @@ func DetectFramework(repoDir string) string {
 		return "python"
 	}
 
+	slog.Warn("could not detect framework, falling back to unknown", "dir", repoDir)
 	return "unknown"
 }
