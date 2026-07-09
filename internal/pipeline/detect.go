@@ -40,7 +40,11 @@ func DetectFramework(repoDir string) string {
 	}
 
 	if fileExists(filepath.Join(repoDir, "vite.config.js")) || fileExists(filepath.Join(repoDir, "vite.config.ts")) {
-		return "static"
+		return "vite"
+	}
+
+	if fileExists(filepath.Join(repoDir, "index.html")) && !fileExists(filepath.Join(repoDir, "package.json")) {
+		return "static-html"
 	}
 
 	if fileExists(filepath.Join(repoDir, "bun.lock")) || fileExists(filepath.Join(repoDir, "bun.lockb")) {
