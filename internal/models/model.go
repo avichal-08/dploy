@@ -20,6 +20,8 @@ type Project struct {
 	Name          string    `gorm:"type:varchar(255);not null;uniqueIndex:idx_user_project"`
 	RepositoryURL string    `gorm:"type:text;not null"`
 	Framework     string    `gorm:"type:varchar(50)"`
+	BuildCommand  string    `gorm:"type:varchar(255)"`
+	RunCommand    string    `gorm:"type:varchar(255)"`
 	ProductionURL string    `gorm:"type:text"`
 	CreatedAt     time.Time `gorm:"autoCreateTime"`
 
