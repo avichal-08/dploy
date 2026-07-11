@@ -12,6 +12,7 @@ import (
 
 	"github.com/avichal-08/dploy/internal/api"
 	"github.com/avichal-08/dploy/internal/db"
+	"github.com/avichal-08/dploy/internal/proxy"
 	"github.com/joho/godotenv"
 )
 
@@ -34,6 +35,10 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/projects", api.HandleCreateProject)
 	mux.HandleFunc("GET /api/projects/{id}", api.HandleGetProject)
+
+	mux.HandleFunc("POST /deployments", api.HandleCreateDeployment)
+	mux.HandleFunc("GET /deployments/{id}", api.HandleGetDeployment)
+
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusOK, map[string]string{"status": "operational"})
 	})
@@ -47,6 +52,8 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
+
+	go proxy.StartProxyServer("8000")
 
 	go func() {
 		slog.Info("Starting Dploy API", "port", srv.Addr)
@@ -69,7 +76,7 @@ func main() {
 		slog.Error("Server forced to shutdown", "error", err)
 	}
 
-	slog.Info("Server stopped.")
+	slog.Info("Server stopped")
 }
 
 func enableCORS(next http.Handler) http.Handler {

@@ -70,14 +70,12 @@ func GenerateDockerfile(cloneDir string, framework string) error {
 							RUN npm run build
 
 							FROM nginx:alpine
-							# Vite builds to the 'dist' folder by default
 							COPY --from=builder /app/dist /usr/share/nginx/html
 							EXPOSE 80
 							`
 	case "static-html":
 		dockerfileContent = `
 							FROM nginx:alpine
-							# Pure HTML doesn't need building, just copy the root directory
 							COPY . /usr/share/nginx/html
 							EXPOSE 80
 							`

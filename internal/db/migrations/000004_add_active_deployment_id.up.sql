@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN active_deployment_id UUID REFERENCES deployments(id) ON DELETE SET NULL;
