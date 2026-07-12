@@ -65,7 +65,7 @@ func RunDeployment(project models.Project, deployment models.Deployment) {
 		return
 	}
 
-	slog.Info("image built successfully, proceeding to provisioning", "deployment_id", deployment.ID)
+	slog.Info("image built successfully, proceeding to running container", "deployment_id", deployment.ID)
 
 	containerID, portStr, runLogs, runErr := RunContainer(deployment.ID)
 
