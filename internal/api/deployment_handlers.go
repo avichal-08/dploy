@@ -6,7 +6,8 @@ import (
 
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
-	"github.com/avichal-08/dploy/internal/pipeline"
+	"github.com/avichal-08/dploy/internal/tasks"
+	"github.com/hibiken/asynq"
 )
 
 type CreateDeploymentPayload struct {
@@ -15,7 +16,8 @@ type CreateDeploymentPayload struct {
 	RunCommand   *string `json:"run_command"`
 }
 
-func HandleCreateDeployment(w http.ResponseWriter, r *http.Request) {
+func HandleCreateDeployment(asynqClient *asynq.Client) http.HandlerFunc {
+   return func(w http.ResponseWriter, r *http.Request) {
 	var payload CreateDeploymentPayload
 
 	if err := ReadJSON(r, &payload); err != nil {
@@ -60,10 +62,17 @@ func HandleCreateDeployment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go pipeline.RunDeployment(project, deployment)
+	task, err := tasks.NewDeployTask(project.ID, deployment.ID)
+	if err != nil {
+
+	}
+	info, err := asynqClient.Enqueue(task)
+	slog.Info("Enqueued Deployment Task", "task_id", info.ID, "queue", info.Queue)
 
 	WriteJSON(w, http.StatusCreated, deployment)
+   }
 }
+
 
 func HandleGetDeployment(w http.ResponseWriter, r *http.Request) {
 	deploymentID := r.PathValue("id")

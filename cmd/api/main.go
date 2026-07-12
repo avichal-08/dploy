@@ -13,6 +13,7 @@ import (
 	"github.com/avichal-08/dploy/internal/api"
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/proxy"
+	"github.com/hibiken/asynq"
 	"github.com/joho/godotenv"
 )
 
@@ -32,11 +33,15 @@ func main() {
 
 	db.Init(dsn)
 
+	redisOpt := asynq.RedisClientOpt{Addr: "localhost:6379"}
+	asynqClient := asynq.NewClient(redisOpt)
+	defer asynqClient.Close()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/projects", api.HandleCreateProject)
 	mux.HandleFunc("GET /api/projects/{id}", api.HandleGetProject)
 
-	mux.HandleFunc("POST /deployments", api.HandleCreateDeployment)
+	mux.HandleFunc("POST /deployments", api.HandleCreateDeployment(asynqClient))
 	mux.HandleFunc("GET /deployments/{id}", api.HandleGetDeployment)
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
