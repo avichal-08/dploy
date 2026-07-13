@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os/exec"
 	"strings"
 	"time"
 )
 
-func BuildImage(buildDir string, deploymentID string) (string, error) {
+func BuildImage(buildDir string, deploymentID string, logWriter io.Writer) (string, error) {
 	imageName := fmt.Sprintf("dploy-img-%s", deploymentID)
 	var buildLogs bytes.Buffer
+
+	multiWriter := io.MultiWriter(&buildLogs, logWriter)
 
 	slog.Info("starting docker build via CLI", "image", imageName, "dir", buildDir)
 	buildCtx, cancelBuild := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -20,8 +23,8 @@ func BuildImage(buildDir string, deploymentID string) (string, error) {
 
 	buildCmd := exec.CommandContext(buildCtx, "docker", "build", "-t", imageName, ".")
 	buildCmd.Dir = buildDir
-	buildCmd.Stdout = &buildLogs
-	buildCmd.Stderr = &buildLogs
+	buildCmd.Stdout = multiWriter
+	buildCmd.Stderr = multiWriter
 
 	if err := buildCmd.Run(); err != nil {
 		slog.Error("docker build failed", "error", err)
@@ -31,18 +34,20 @@ func BuildImage(buildDir string, deploymentID string) (string, error) {
 	return buildLogs.String(), nil
 }
 
-func RunContainer(deploymentID string) (string, string, string, error) {
+func RunContainer(deploymentID string, logWriter io.Writer) (string, string, string, error) {
 	imageName := fmt.Sprintf("dploy-img-%s", deploymentID)
 	containerName := fmt.Sprintf("dploy-cnt-%s", deploymentID)
 	var runLogs bytes.Buffer
+
+	multiWriter := io.MultiWriter(&runLogs, logWriter)
 
 	slog.Info("starting container with resource limits", "container", containerName)
 	runCtx, cancelRun := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelRun()
 
 	runCmd := exec.CommandContext(runCtx, "docker", "run", "-d", "-P", "--memory=512m", "--cpus=0.5", "--name", containerName, imageName)
-	runCmd.Stdout = &runLogs
-	runCmd.Stderr = &runLogs
+	runCmd.Stdout = multiWriter
+	runCmd.Stderr = multiWriter
 
 	if err := runCmd.Run(); err != nil {
 		slog.Error("docker run failed", "error", err)

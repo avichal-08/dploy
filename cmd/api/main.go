@@ -13,8 +13,11 @@ import (
 	"github.com/avichal-08/dploy/internal/api"
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/proxy"
+	"github.com/avichal-08/dploy/internal/pubsub"
+
 	"github.com/hibiken/asynq"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -37,12 +40,18 @@ func main() {
 	asynqClient := asynq.NewClient(redisOpt)
 	defer asynqClient.Close()
 
+	redisClient := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/projects", api.HandleCreateProject)
 	mux.HandleFunc("GET /api/projects/{id}", api.HandleGetProject)
 
 	mux.HandleFunc("POST /deployments", api.HandleCreateDeployment(asynqClient))
 	mux.HandleFunc("GET /deployments/{id}", api.HandleGetDeployment)
+
+	subscriber := &pubsub.RedisSubscriber{Client: redisClient}
+
+	mux.HandleFunc("GET /deployments/{id}/logs", api.HandleLogStream(subscriber))
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusOK, map[string]string{"status": "operational"})

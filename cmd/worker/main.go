@@ -11,8 +11,10 @@ import (
 	"github.com/avichal-08/dploy/internal/models"
 	"github.com/avichal-08/dploy/internal/pipeline"
 	"github.com/avichal-08/dploy/internal/tasks"
+	"github.com/avichal-08/dploy/internal/worker"
 	"github.com/hibiken/asynq"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -62,7 +64,18 @@ func deployWorkerOrchestrator(ctx context.Context, t *asynq.Task) error {
 		return fmt.Errorf("failed to hydrate deployment: %w", err)
 	}
 
-	pipeline.RunDeployment(project, deployment)
+	redisClient := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	defer redisClient.Close()
+
+	logWriter := &worker.RedisLogWriter{
+		Ctx:     context.Background(),
+		Client:  redisClient,
+		Channel: "logs:" + deployment.ID,
+	}
+
+	pipeline.RunDeployment(project, deployment, logWriter)
+
+	redisClient.Publish(context.Background(), logWriter.Channel, "EOF_BUILD_COMPLETE")
 
 	return nil
 }

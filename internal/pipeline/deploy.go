@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,8 +12,9 @@ import (
 	"github.com/avichal-08/dploy/internal/models"
 )
 
-func RunDeployment(project models.Project, deployment models.Deployment) {
+func RunDeployment(project models.Project, deployment models.Deployment, logWriter io.Writer) {
 	slog.Info("starting deployment phase", "deployment_id", deployment.ID, "project_id", project.ID)
+	logWriter.Write([]byte("--> Preparing build environment...\n"))
 
 	db.DB.Model(&deployment).Update("status", "cloning")
 
@@ -54,7 +56,9 @@ func RunDeployment(project models.Project, deployment models.Deployment) {
 		}
 	}
 
-	buildLogs, buildErr := BuildImage(buildDir, deployment.ID)
+	logWriter.Write([]byte("--> Starting Docker build phase...\n"))
+
+	buildLogs, buildErr := BuildImage(buildDir, deployment.ID, logWriter)
 	if buildErr != nil {
 		slog.Error("image build failed", "error", buildErr)
 		db.DB.Model(&deployment).Updates(map[string]interface{}{
@@ -66,8 +70,9 @@ func RunDeployment(project models.Project, deployment models.Deployment) {
 	}
 
 	slog.Info("image built successfully, proceeding to running container", "deployment_id", deployment.ID)
+	logWriter.Write([]byte("--> Image built successfully. Starting container...\n"))
 
-	containerID, portStr, runLogs, runErr := RunContainer(deployment.ID)
+	containerID, portStr, runLogs, runErr := RunContainer(deployment.ID, logWriter)
 
 	finalLogs := buildLogs + "\n--- RUN PHASE ---\n" + runLogs
 
