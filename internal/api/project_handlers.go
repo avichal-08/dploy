@@ -39,6 +39,21 @@ func HandleCreateProject(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusCreated, project)
 }
 
+func HandleGetProjects(w http.ResponseWriter, r *http.Request) {
+	userId := r.PathValue("user_id")
+	if userId == "" {
+		WriteError(w, http.StatusBadRequest, "User ID is required")
+		return
+	}
+	var projects []models.Project
+	if err := db.DB.Find(&projects, "user_id = ?", userId).Error; err != nil {
+		WriteError(w, http.StatusInternalServerError, "Failed to get projects")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, projects)
+}
+
 func HandleGetProject(w http.ResponseWriter, r *http.Request) {
 	projectID := r.PathValue("id")
 	if projectID == "" {

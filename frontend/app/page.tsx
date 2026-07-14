@@ -1,29 +1,30 @@
-import { Rocket, ArrowRight, Terminal, Zap } from "lucide-react";
+import { TerminalSquare, ArrowRight, Terminal, Zap } from "lucide-react";
 
 export default function Home() {
    return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-800 flex flex-col">
-         {/* Navigation */}
-         <nav className="border-b border-zinc-800/50 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-10">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] font-sans selection:bg-blue-500/30 flex flex-col relative">
+
+         <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272A_1px,transparent_1px),linear-gradient(to_bottom,#27272A_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 pointer-events-none" />
+
+         <nav className="h-14 border-b border-[#27272A] bg-[#09090B] relative z-10 flex items-center px-6">
+            <div className="max-w-6xl w-full mx-auto flex items-center justify-between">
                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-                     <Rocket className="w-5 h-5 text-black" />
-                  </div>
-                  <span className="text-xl font-bold tracking-tight">Dploy.</span>
+                  <TerminalSquare className="w-5 h-5 text-[#FAFAFA]" />
+                  <span className="font-bold tracking-tight text-sm">DPLOY</span>
                </div>
 
-               <div className="flex items-center gap-4">
+               <div className="flex items-center gap-6">
                   <a
                      href="https://github.com"
                      target="_blank"
-                     className="text-zinc-400 hover:text-white transition-colors"
+                     rel="noreferrer"
+                     className="text-sm font-medium text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
                   >
-
+                     GitHub
                   </a>
                   <a
                      href="/project"
-                     className="text-sm font-medium bg-white text-black px-4 py-2 rounded-lg hover:bg-zinc-200 transition-colors"
+                     className="text-sm font-medium bg-[#FAFAFA] text-[#09090B] px-3.5 py-1.5 rounded-md hover:bg-[#E4E4E7] transition-colors"
                   >
                      Dashboard
                   </a>
@@ -31,48 +32,44 @@ export default function Home() {
             </div>
          </nav>
 
-         <main className="flex-1 flex flex-col items-center justify-center px-4 relative overflow-hidden">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
+         <main className="flex-1 flex flex-col items-center justify-center px-4 relative z-10">
+            <div className="max-w-4xl mx-auto text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 mt-[-4rem]">
 
-            <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm font-medium border border-blue-500/20 mb-4">
-                  <Zap className="w-4 h-4" />
+               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#111113] text-[#A1A1AA] text-xs font-medium border border-[#27272A] mb-4">
+                  <Zap className="w-3.5 h-3.5 text-blue-500" />
                   <span>Dploy Engine v1.0 is now live</span>
                </div>
 
-               <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight text-white leading-tight">
-                  Ship your code <br className="hidden sm:block" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-                     in seconds.
-                  </span>
+               <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-[#FAFAFA] leading-[1.1]">
+                  Ship your code. <br className="hidden sm:block" />
+                  Control your infrastructure.
                </h1>
 
-               <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-                  The modern Platform as a Service. Connect your GitHub repository,
-                  let our engine auto-detect your framework, and go live instantly in an isolated container.
+               <p className="text-lg text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
+                  The self-hosted Platform as a Service built for engineers. Connect your repository, let our engine handle the orchestration, and go live instantly in isolated containers.
                </p>
 
-               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
                   <a
-                     href="/project"
-                     className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-black px-8 py-4 rounded-xl font-medium text-lg hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95"
+                     href="/home"
+                     className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#FAFAFA] text-[#09090B] px-6 py-2.5 rounded-md font-medium text-sm hover:bg-[#E4E4E7] transition-colors"
                   >
                      Create Project
-                     <ArrowRight className="w-5 h-5" />
+                     <ArrowRight className="w-4 h-4" />
                   </a>
                   <a
                      href="#features"
-                     className="w-full sm:w-auto flex items-center justify-center gap-2 bg-zinc-900 border border-zinc-800 text-white px-8 py-4 rounded-xl font-medium text-lg hover:bg-zinc-800 transition-colors"
+                     className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#111113] border border-[#27272A] text-[#FAFAFA] px-6 py-2.5 rounded-md font-medium text-sm hover:border-[#52525B] transition-colors"
                   >
-                     <Terminal className="w-5 h-5 text-zinc-400" />
+                     <Terminal className="w-4 h-4 text-[#A1A1AA]" />
                      View Documentation
                   </a>
                </div>
             </div>
          </main>
 
-         <footer className="border-t border-zinc-800/50 py-8 text-center text-zinc-500 text-sm relative z-10 bg-zinc-950">
-            <p>Built with Go, Docker, and React.</p>
+         <footer className="border-t border-[#27272A] py-6 text-center text-[#52525B] text-xs font-medium relative z-10 bg-[#09090B]">
+            <p>Engineered with Go, Docker, and React.</p>
          </footer>
       </div>
    );

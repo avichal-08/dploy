@@ -43,8 +43,12 @@ func main() {
 	redisClient := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
 
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /api/users/{user_id}", api.HandleGetUser)
+
 	mux.HandleFunc("POST /api/projects", api.HandleCreateProject)
-	mux.HandleFunc("GET /api/projects/{id}", api.HandleGetProject)
+	mux.HandleFunc("GET /api/projects/{user_id}", api.HandleGetProjects)
+	mux.HandleFunc("GET /api/project/{id}", api.HandleGetProject)
 
 	mux.HandleFunc("POST /api/deployments", api.HandleCreateDeployment(asynqClient))
 	mux.HandleFunc("GET /api/deployments/{id}", api.HandleGetDeployment)
