@@ -21,6 +21,18 @@ func GetCommitSHA(repoDir string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+func GetCommitMessage(repoDir string) (string, error) {
+	cmd := exec.Command("git", "log", "-1", "--pretty=%B")
+	cmd.Dir = repoDir
+
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get commit message: %v", err)
+	}
+
+	return strings.TrimSpace(string(out)), nil
+}
+
 func fileExists(path string) bool {
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {

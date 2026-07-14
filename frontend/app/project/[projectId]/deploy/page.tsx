@@ -23,7 +23,7 @@ const BUILD_PHASES = [
    { id: "provisioning", label: "Provisioning" },
 ];
 
-export default function ProjectDeploymentPage({ params }: { params?: { id: string } }) {
+export default function ProjectDeploymentPage({ params }: { params?: { projectId: string } }) {
    const [projectId, setProjectId] = useState<string>("");
 
    const [step, setStep] = useState(1);
@@ -40,16 +40,24 @@ export default function ProjectDeploymentPage({ params }: { params?: { id: strin
 
    const terminalEndRef = useRef<HTMLDivElement>(null);
 
+   // Extract projectId safely
    useEffect(() => {
-      if (params?.id) {
-         setProjectId(params.id);
-      } else if (typeof window !== "undefined") {
-         const pathParts = window.location.pathname.split("/");
-         const idIndex = pathParts.indexOf("project") + 1;
-         if (idIndex > 0 && pathParts[idIndex]) {
-            setProjectId(pathParts[idIndex]);
+      const resolveProjectId = async () => {
+         // FIX: In Next.js 15, params is a Promise. Await unwraps it safely.
+         const resolvedParams = await params;
+
+         if (resolvedParams?.projectId) {
+            setProjectId(resolvedParams.projectId);
+         } else if (typeof window !== "undefined") {
+            const pathParts = window.location.pathname.split("/");
+            const idIndex = pathParts.indexOf("project") + 1;
+            if (idIndex > 0 && pathParts[idIndex]) {
+               setProjectId(pathParts[idIndex]);
+            }
          }
-      }
+      };
+
+      resolveProjectId();
    }, [params]);
 
    useEffect(() => {
@@ -348,7 +356,7 @@ export default function ProjectDeploymentPage({ params }: { params?: { id: strin
 
                   <div className="w-full max-w-sm p-5 bg-[#111113] border border-[#27272A] rounded-md space-y-3 shadow-sm">
                      <div className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider flex items-center gap-2">
-                        <Globe className="w-3.5 h-3.5" /> Production URL
+                     Production URL
                      </div>
                      <a
                         href={`http://${projectName}.localhost:8000`}

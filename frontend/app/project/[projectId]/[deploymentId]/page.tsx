@@ -24,8 +24,8 @@ export default function DeploymentDetailsPage({ params }: { params?: { projectId
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (params?.id && params?.deploymentId) {
-      setProjectId(params.id);
+    if (params?.projectId && params?.deploymentId) {
+      setProjectId(params.projectId);
       setDeploymentId(params.deploymentId);
     } else if (typeof window !== "undefined") {
       const pathParts = window.location.pathname.split("/");
@@ -112,6 +112,7 @@ export default function DeploymentDetailsPage({ params }: { params?: { projectId
 
   const status = deployment.Status || deployment.status || "Unknown";
   const commitSha = deployment.CommitSHA || deployment.commit_sha || "Unknown";
+  const commitMsg = deployment.CommitMessage || deployment.commit_message || "No commit message";
   const containerId = deployment.ContainerID || deployment.container_id || "N/A";
   const internalPort = deployment.InternalPort || deployment.internal_port || "N/A";
   const buildLogs = deployment.BuildLogs || deployment.build_logs || "No logs available for this deployment.";
@@ -142,7 +143,7 @@ export default function DeploymentDetailsPage({ params }: { params?: { projectId
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
             <div className="space-y-3">
               <h1 className="text-2xl font-bold tracking-tight text-[#FAFAFA] flex items-center gap-3">
-                Deployment <span className="font-mono text-[#A1A1AA] text-lg">{deploymentId}</span>
+                Commit Message <span className="font-mono text-[#A1A1AA] text-lg">{commitMsg}</span>
               </h1>
 
               <div className="flex flex-wrap items-center gap-4 text-sm">

@@ -38,9 +38,16 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		slog.Error("commit sha extraction failed", "error", err)
 	}
 
-	db.DB.Model(&deployment).Update("commit_sha", commitSha)
+	commitMessage, err := GetCommitMessage(buildDir)
+	if err != nil {
+		slog.Error("commit message extraction failed", "error", err)
+	}
 
-	db.DB.Model(&deployment).Update("status", "building")
+	db.DB.Model(&deployment).Updates(map[string]interface{}{
+		"status":         "building",
+		"commit_sha":     strings.TrimSpace(commitSha),
+		"commit_message": strings.TrimSpace(commitMessage),
+	})
 
 	if err := GenerateDockerfile(buildDir, project.Framework); err != nil {
 		slog.Error("failed to generate dockerfile", "error", err)

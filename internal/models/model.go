@@ -31,13 +31,14 @@ type Project struct {
 }
 
 type Deployment struct {
-	ID           string `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	ProjectID    string `gorm:"type:uuid;not null"`
-	CommitSHA    string `gorm:"type:varchar(40);not null"`
-	Status       string `gorm:"type:varchar(50);default:'pending';not null"`
-	ContainerID  string `gorm:"type:varchar(255)"`
-	InternalPort int
-	BuildLogs    string    `gorm:"type:text"`
-	CreatedAt    time.Time `gorm:"autoCreateTime"`
-	FinishedAt   *time.Time
+	ID            string `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	ProjectID     string `gorm:"type:uuid;not null"`
+	CommitSHA     string `gorm:"type:varchar(40);not null"`
+	CommitMessage string `gorm:"type:text"`
+	Status        string `gorm:"type:varchar(50);default:'pending';not null"`
+	ContainerID   string `gorm:"type:varchar(255)"`
+	InternalPort  int
+	BuildLogs     string    `gorm:"type:text"`
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	FinishedAt    *time.Time
 }

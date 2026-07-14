@@ -68,7 +68,7 @@ export default function CreateProjectPage() {
             throw new Error("Project was created, but no ID was returned in the JSON response.");
          }
 
-         router.push(`/project/new/${targetId}`);
+         router.push(`/project/${targetId}/deploy`);
 
       } catch (err: any) {
          setError(err.message);

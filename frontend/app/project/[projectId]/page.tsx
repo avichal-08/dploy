@@ -25,8 +25,8 @@ export default function ProjectOverviewPage({ params }: { params?: { projectId: 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (params?.id) {
-      setProjectId(params.id);
+    if (params?.projectId) {
+      setProjectId(params.projectId);
     } else if (typeof window !== "undefined") {
       const pathParts = window.location.pathname.split("/");
       setProjectId(pathParts[pathParts.length - 1]);
