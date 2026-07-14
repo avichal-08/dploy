@@ -62,7 +62,7 @@ func HandleGetProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var project models.Project
-	if err := db.DB.First(&project, "id = ?", projectID).Error; err != nil {
+	if err := db.DB.Preload("Deployments").First(&project, "id = ?", projectID).Error; err != nil {
 		WriteError(w, http.StatusNotFound, "Project not found")
 		return
 	}

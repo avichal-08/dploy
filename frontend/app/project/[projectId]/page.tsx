@@ -1,368 +1,315 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
-   Terminal,
-   Rocket,
-   CheckCircle,
-   ExternalLink,
-   Loader2,
-   ArrowRight,
-   Settings,
-   AlertCircle
+  ArrowLeft,
+  ExternalLink,
+  GitBranch,
+  Terminal,
+  Box,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Clock,
+  GitCommit,
+  ChevronRight
 } from "lucide-react";
 
 const API_BASE = "http://localhost:8080/api";
-const WS_BASE = "ws://localhost:8080/api";
 
-const BUILD_PHASES = [
-   { id: "cloning", label: "Cloning Repo" },
-   { id: "dockerfile", label: "Configuration" },
-   { id: "building", label: "Building Image" },
-   { id: "provisioning", label: "Provisioning" },
-];
+export default function ProjectOverviewPage({ params }: { params?: { projectId: string } }) {
+  const [projectId, setProjectId] = useState<string>("");
+  const [project, setProject] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function ProjectDeploymentPage({ params }: { params?: { id: string } }) {
-   const [projectId, setProjectId] = useState<string>("");
+  useEffect(() => {
+    if (params?.id) {
+      setProjectId(params.id);
+    } else if (typeof window !== "undefined") {
+      const pathParts = window.location.pathname.split("/");
+      setProjectId(pathParts[pathParts.length - 1]);
+    }
+  }, [params]);
 
-   const [step, setStep] = useState(1);
-   const [project, setProject] = useState<any>(null);
-   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!projectId) return;
 
-   const [buildCommand, setBuildCommand] = useState("");
-   const [runCommand, setRunCommand] = useState("");
-
-   const [deployment, setDeployment] = useState<any>(null);
-   const [buildPhase, setBuildPhase] = useState("cloning");
-   const [logs, setLogs] = useState<string[]>([]);
-   const [isDeploying, setIsDeploying] = useState(false);
-
-   const terminalEndRef = useRef<HTMLDivElement>(null);
-
-   useEffect(() => {
-      if (params?.id) {
-         setProjectId(params.id);
-      } else if (typeof window !== "undefined") {
-         const pathParts = window.location.pathname.split("/");
-         setProjectId(pathParts[pathParts.length - 1]);
-      }
-   }, [params]);
-
-   useEffect(() => {
-      if (!projectId || step !== 1) return;
-
-      const pollProject = async () => {
-         try {
-            const res = await fetch(`${API_BASE}/projects/${projectId}`);
-            if (!res.ok) throw new Error("Failed to fetch project");
-
-            const data = await res.json();
-
-            const framework = data.framework || data.Framework;
-            const status = data.status || data.Status;
-
-            if (framework || status !== "cloning") {
-               setProject(data);
-               setBuildCommand(data.build_command || data.BuildCommand || "");
-               setRunCommand(data.run_command || data.RunCommand || "");
-               setStep(2);
-            }
-         } catch (err: any) {
-            console.error("Polling error:", err);
-         }
-      };
-
-      pollProject();
-      const interval = setInterval(pollProject, 1000);
-
-      return () => clearInterval(interval);
-   }, [projectId, step]);
-
-   useEffect(() => {
-      let ws: WebSocket;
-      const targetDeploymentId = deployment?.id || deployment?.ID;
-
-      if (step === 3 && targetDeploymentId) {
-         setLogs([
-            "--> Connecting to Dploy build cluster...",
-            `--> Subscribing to logs for deployment: ${targetDeploymentId}`,
-         ]);
-
-         setBuildPhase("cloning");
-
-         ws = new WebSocket(`${WS_BASE}/deployments/${targetDeploymentId}/logs`);
-
-         ws.onmessage = (event) => {
-            const rawData = event.data;
-            try {
-               const parsed = JSON.parse(rawData);
-               if (parsed.status || parsed.Status) setBuildPhase(parsed.status || parsed.Status);
-               if (parsed.log || parsed.Log) setLogs((prev) => [...prev, parsed.log || parsed.Log]);
-            } catch (e) {
-               setLogs((prev) => [...prev, rawData]);
-               const text = rawData.toLowerCase();
-               if (text.includes("clone") || text.includes("cloning")) setBuildPhase("cloning");
-               else if (text.includes("dockerfile") || text.includes("generating")) setBuildPhase("dockerfile");
-               else if (text.includes("build") || text.includes("step 1/") || text.includes("npm install")) setBuildPhase("building");
-               else if (text.includes("starting container") || text.includes("provision") || text.includes("port")) setBuildPhase("provisioning");
-            }
-         };
-
-         ws.onclose = (event) => {
-            if (event.reason === "Deployment Complete") setStep(4);
-            else {
-               setLogs((prev) => [...prev, "\n[Connection closed. Build process ended.]"]);
-               setTimeout(() => setStep(4), 2000);
-            }
-         };
-
-         ws.onerror = () => {
-            setLogs((prev) => [...prev, "\n[WebSocket Connection Error]"]);
-         };
-      }
-      return () => {
-         if (ws) ws.close();
-      };
-   }, [step, deployment]);
-
-   useEffect(() => {
-      if (terminalEndRef.current) {
-         terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
-      }
-   }, [logs]);
-
-   const handleDeploy = async () => {
-      setIsDeploying(true);
-      setError(null);
-
+    const fetchProject = async () => {
       try {
-         const payload = {
-            project_id: projectId,
-            build_command: buildCommand,
-            run_command: runCommand
-         };
+        const res = await fetch(`${API_BASE}/project/${projectId}`);
+        if (!res.ok) throw new Error("Project not found or failed to load");
 
-         const res = await fetch(`${API_BASE}/deployments`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-         });
-
-         const text = await res.text();
-         let data;
-         try {
-            data = text ? JSON.parse(text) : {};
-         } catch (e) {
-            throw new Error(`Server returned non-JSON (${res.status}): ${text.slice(0, 50)}`);
-         }
-
-         if (!res.ok) throw new Error(data.error || data.Error || "Failed to start deployment");
-
-         setDeployment(data);
-         setStep(3);
+        const data = await res.json();
+        setProject(data);
       } catch (err: any) {
-         setError(err.message);
+        setError(err.message);
       } finally {
-         setIsDeploying(false);
+        setIsLoading(false);
       }
-   };
+    };
 
-   const activePhaseIndex = BUILD_PHASES.findIndex((p) => p.id === buildPhase);
+    fetchProject();
+  }, [projectId]);
 
-   return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-800">
-         <nav className="border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-10">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-               <div
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => window.location.href = "/"}
-               >
-                  <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-                     <Rocket className="w-5 h-5 text-black" />
-                  </div>
-                  <span className="text-xl font-bold tracking-tight">Dploy.</span>
-               </div>
-            </div>
-         </nav>
+  const getStatusColor = (rawStatus: string) => {
+    const status = (rawStatus || "").toLowerCase();
+    switch (status) {
+      case "deployed":
+      case "success":
+      case "running": return "text-green-500 bg-green-500/10 border-green-500/20";
+      case "failed": return "text-red-500 bg-red-500/10 border-red-500/20";
+      default: return "text-[#A1A1AA] bg-[#27272A]/50 border-[#27272A]";
+    }
+  };
 
-         <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-32">
+  const getStatusIcon = (rawStatus: string) => {
+    const status = (rawStatus || "").toLowerCase();
+    switch (status) {
+      case "deployed":
+      case "success":
+      case "running": return <CheckCircle2 className="w-4 h-4" />;
+      case "failed": return <XCircle className="w-4 h-4" />;
+      default: return <Activity className="w-4 h-4" />;
+    }
+  };
 
-            {step === 1 && (
-               <div className="flex flex-col items-center justify-center space-y-6 mt-12 animate-in fade-in zoom-in duration-500">
-                  <div className="relative">
-                     <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full" />
-                     <div className="w-20 h-20 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center relative z-10 shadow-2xl">
-                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                     </div>
-                  </div>
-                  <div className="text-center space-y-2">
-                     <h2 className="text-2xl font-bold text-white tracking-tight">Inspecting Repository</h2>
-                     <p className="text-zinc-400">Our engine is cloning the code and detecting your framework...</p>
-                  </div>
-               </div>
-            )}
+  const formatRepo = (url: string) => {
+    if (!url) return "Unknown Repository";
+    return url.replace("https://github.com/", "").replace(".git", "");
+  };
 
-            {step === 2 && project && (
-               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center gap-3">
-                     <Settings className="w-6 h-6 text-zinc-400" />
-                     <h2 className="text-2xl font-bold text-white">Configure Deployment</h2>
-                  </div>
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
 
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
-                     <div className="p-6 border-b border-zinc-800 bg-zinc-950/30">
-                        <h3 className="font-medium text-lg truncate text-white">{project.repository_url || project.RepositoryURL}</h3>
-                        <p className="text-zinc-500 text-sm font-mono mt-1">
-                           Target Subdomain: <span className="text-blue-400">{project.name || project.Name}.localhost</span>
-                        </p>
-                     </div>
-
-                     <div className="p-6 space-y-6">
-                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-start gap-4">
-                           <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-                           <div>
-                              <div className="text-sm font-medium text-blue-400 mb-1">Framework Auto-Detected</div>
-                              <div className="text-zinc-300">We detected a <strong className="text-white capitalize">{project.framework || project.Framework || 'Generic Docker'}</strong> setup. Review the generated commands below.</div>
-                           </div>
-                        </div>
-
-                        <div className="space-y-4">
-                           <div className="space-y-2">
-                              <label className="block text-sm font-medium text-zinc-400">Build Command</label>
-                              <input
-                                 type="text"
-                                 value={buildCommand}
-                                 onChange={(e) => setBuildCommand(e.target.value)}
-                                 placeholder="e.g. npm run build"
-                                 className="block w-full px-4 py-3 border border-zinc-700 rounded-xl bg-zinc-950 font-mono text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                              />
-                           </div>
-
-                           <div className="space-y-2">
-                              <label className="block text-sm font-medium text-zinc-400">Run Command</label>
-                              <input
-                                 type="text"
-                                 value={runCommand}
-                                 onChange={(e) => setRunCommand(e.target.value)}
-                                 placeholder="e.g. npm start"
-                                 className="block w-full px-4 py-3 border border-zinc-700 rounded-xl bg-zinc-950 font-mono text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                              />
-                           </div>
-                        </div>
-
-                        {error && (
-                           <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
-                              <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                              <p className="text-sm text-red-400">{error}</p>
-                           </div>
-                        )}
-
-                        <button
-                           onClick={handleDeploy}
-                           disabled={isDeploying}
-                           className="w-full flex items-center justify-center gap-2 bg-white hover:bg-zinc-200 text-black py-4 rounded-xl font-bold text-lg transition-all disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                           {isDeploying ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                           ) : (
-                              "Deploy Project"
-                           )}
-                           {!isDeploying && <ArrowRight className="w-5 h-5" />}
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            )}
-
-            {step === 3 && (
-               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                     {BUILD_PHASES.map((phase, idx) => {
-                        const isActive = idx === activePhaseIndex;
-                        const isPast = activePhaseIndex > idx;
-
-                        return (
-                           <div
-                              key={phase.id}
-                              className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 ${
-                                 isActive ? 'bg-blue-500/10 border-blue-500/50' :
-                                 isPast ? 'bg-green-500/10 border-green-500/30' :
-                                 'bg-zinc-900/50 border-zinc-800/50'
-                              }`}
-                           >
-                              {isActive ? (
-                                 <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />
-                              ) : isPast ? (
-                                 <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                              ) : (
-                                 <div className="w-4 h-4 rounded-full border-2 border-zinc-700 shrink-0" />
-                              )}
-                              <span className={`text-xs sm:text-sm font-medium whitespace-nowrap ${
-                                 isActive ? 'text-blue-400' : isPast ? 'text-green-400' : 'text-zinc-500'
-                              }`}>
-                                 {phase.label}
-                              </span>
-                           </div>
-                        );
-                     })}
-                  </div>
-
-                  <div className="bg-[#0A0A0A] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[500px]">
-                     <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-3 flex items-center gap-2">
-                        <Terminal className="w-4 h-4 text-zinc-400" />
-                        <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Build Logs</span>
-                     </div>
-                     <div className="p-4 overflow-y-auto font-mono text-xs sm:text-sm flex-1 custom-scrollbar">
-                        {logs.map((log, index) => (
-                           <div key={index} className="text-zinc-300 leading-relaxed break-all whitespace-pre-wrap">
-                              {log}
-                           </div>
-                        ))}
-                        <div ref={terminalEndRef} />
-                     </div>
-                  </div>
-               </div>
-            )}
-
-            {step === 4 && project && (
-               <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-center mt-8 sm:mt-12">
-                  <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                     <CheckCircle className="w-10 h-10" />
-                  </div>
-                  <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">Deployment Complete!</h1>
-                  <p className="text-zinc-400 text-lg">Your application is now live and serving traffic.</p>
-
-                  <div className="max-w-md mx-auto mt-8 p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
-                     <div className="text-sm font-medium text-zinc-500 uppercase tracking-wider">Production URL</div>
-                     <a
-                        href={`http://${project.name || project.Name}.localhost:8000`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-center gap-2 text-blue-400 hover:text-blue-300 text-lg font-medium transition-colors break-all"
-                     >
-                        {project.name || project.Name}.localhost:8000
-                        <ExternalLink className="w-5 h-5 shrink-0" />
-                     </a>
-                  </div>
-
-                  <button
-                     onClick={() => window.location.href = "/project"}
-                     className="mt-12 text-zinc-400 hover:text-white transition-colors underline underline-offset-4"
-                  >
-                     Deploy another project
-                  </button>
-               </div>
-            )}
-         </main>
-
-         <style dangerouslySetInnerHTML={{
-            __html: `
-               .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-               .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-               .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
-               .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #52525b; }
-            `
-         }} />
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-[#27272A] border-t-[#FAFAFA] rounded-full animate-spin" />
+          <p className="text-[#A1A1AA] text-sm font-medium">Loading project details...</p>
+        </div>
       </div>
-   );
+    );
+  }
+
+  if (error || !project) {
+    return (
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-[#111113] border border-[#27272A] rounded-md p-6 text-center space-y-4">
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
+          <h2 className="text-[#FAFAFA] text-lg font-bold">Failed to load project</h2>
+          <p className="text-[#A1A1AA] text-sm">{error || "Project could not be found."}</p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="bg-[#FAFAFA] text-[#09090B] px-4 py-2 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors mt-2"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const projectName = project.Name || project.name;
+  const status = project.Status || project.status || "Unknown";
+  const repoUrl = project.RepositoryURL || project.repository_url;
+  const framework = project.Framework || project.framework || "Docker";
+  const buildCmd = project.BuildCommand || project.build_command || "N/A";
+  const runCmd = project.RunCommand || project.run_command || "N/A";
+  const createdAt = project.CreatedAt || project.created_at;
+  const activeDeployment = project.ActiveDeploymentID || project.active_deployment_id;
+  const productionUrl = project.ProductionURL || project.production_url || `${projectName}.localhost:8000`;
+
+  const deployments = project.Deployments || project.deployments || [];
+
+  const sortedDeployments = [...deployments].sort((a, b) => {
+    const dateA = new Date(a.CreatedAt || a.created_at).getTime();
+    const dateB = new Date(b.CreatedAt || b.created_at).getTime();
+    return dateB - dateA;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] font-sans antialiased selection:bg-blue-500/30 flex flex-col">
+      <nav className="h-14 border-b border-[#27272A] bg-[#09090B] shrink-0 px-6 flex items-center gap-4 sticky top-0 z-10">
+        <button
+          onClick={() => window.location.href = '/'}
+          className="text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors flex items-center justify-center p-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <span className="text-[#A1A1AA]">avichal-08</span>
+          <span className="text-[#52525B]">/</span>
+          <span className="text-[#FAFAFA]">{projectName}</span>
+        </div>
+      </nav>
+
+      <main className="flex-1 overflow-y-auto p-6 md:p-10">
+        <div className="max-w-5xl mx-auto space-y-8">
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-4">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[#FAFAFA]">
+                {projectName}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <a
+                  href={`http://${productionUrl}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors font-medium"
+                >
+                  {productionUrl}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+
+                <span className="text-[#27272A]">•</span>
+
+                <a
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
+                >
+                  <GitBranch className="w-4 h-4" />
+                  {formatRepo(repoUrl)}
+                </a>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium capitalize ${getStatusColor(status)}`}>
+                {getStatusIcon(status)}
+                {status}
+              </div>
+              <button
+                onClick={() => window.location.href = `/project/${projectId}/deploy`}
+                className="bg-[#FAFAFA] text-[#09090B] px-4 py-1.5 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors shadow-sm"
+              >
+                Redeploy
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-[#111113] border border-[#27272A] rounded-md p-6 space-y-6">
+              <h2 className="text-lg font-semibold text-[#FAFAFA] flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[#A1A1AA]" />
+                Current Deployment
+              </h2>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 text-sm">
+                  <span className="text-[#A1A1AA]">Status</span>
+                  <span className="col-span-2 text-[#FAFAFA] capitalize">{status}</span>
+                </div>
+                <div className="grid grid-cols-3 text-sm">
+                  <span className="text-[#A1A1AA]">Created</span>
+                  <span className="col-span-2 text-[#FAFAFA]">{formatDate(createdAt)}</span>
+                </div>
+                <div className="grid grid-cols-3 text-sm">
+                  <span className="text-[#A1A1AA]">Framework</span>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <Box className="w-4 h-4 text-[#FAFAFA]" />
+                    <span className="text-[#FAFAFA] capitalize">{framework}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 text-sm">
+                  <span className="text-[#A1A1AA]">Deployment ID</span>
+                  <span className="col-span-2 text-[#FAFAFA] font-mono text-xs truncate" title={activeDeployment || "None"}>
+                    {activeDeployment || "No active deployment"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#111113] border border-[#27272A] rounded-md p-6 space-y-6">
+              <h2 className="text-lg font-semibold text-[#FAFAFA] flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-[#A1A1AA]" />
+                Build Configuration
+              </h2>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <span className="text-[#A1A1AA] text-sm">Build Command</span>
+                  <div className="bg-[#09090B] border border-[#27272A] rounded p-2.5 font-mono text-xs text-[#FAFAFA] overflow-x-auto whitespace-nowrap">
+                    {buildCmd}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[#A1A1AA] text-sm">Run Command</span>
+                  <div className="bg-[#09090B] border border-[#27272A] rounded p-2.5 font-mono text-xs text-[#FAFAFA] overflow-x-auto whitespace-nowrap">
+                    {runCmd}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#111113] border border-[#27272A] rounded-md overflow-hidden">
+            <div className="p-6 border-b border-[#27272A] flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-[#FAFAFA] flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#A1A1AA]" />
+                Deployment History
+              </h2>
+            </div>
+
+            <div className="divide-y divide-[#27272A]">
+              {sortedDeployments.length === 0 ? (
+                <div className="p-8 text-center text-[#A1A1AA] text-sm">
+                  No deployments found for this project.
+                </div>
+              ) : (
+                sortedDeployments.map((dep: any) => {
+                  const depId = dep.ID || dep.id;
+                  const depStatus = dep.Status || dep.status || "Unknown";
+                  const depCommit = dep.CommitSHA || dep.commit_sha || "HEAD";
+                  const depCreatedAt = dep.CreatedAt || dep.created_at;
+
+                  return (
+                    <div
+                      key={depId}
+                      onClick={() => window.location.href = `/project/${projectId}/${depId}`}
+                      className="group flex items-center justify-between p-4 hover:bg-[#27272A]/30 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`flex items-center gap-2 w-28 px-2 py-1 rounded-md border text-xs font-medium capitalize ${getStatusColor(depStatus)}`}>
+                          {getStatusIcon(depStatus)}
+                          {depStatus}
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm">
+                          <GitCommit className="w-4 h-4 text-[#A1A1AA]" />
+                          <span className="font-mono text-[#FAFAFA]">
+                            {depCommit.substring(0, 7)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        <span className="text-sm text-[#A1A1AA] hidden sm:block">
+                          {formatDate(depCreatedAt)}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-[#52525B] group-hover:text-[#FAFAFA] transition-colors" />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  );
 }

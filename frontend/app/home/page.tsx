@@ -295,7 +295,7 @@ export default function HomePage() {
                 <h3 className="text-[#FAFAFA] font-medium mb-1">No projects found</h3>
                 <p className="text-sm text-[#A1A1AA] mb-4">Deploy your first repository to get started.</p>
                 <button
-                  onClick={() => window.location.href = '/project'}
+                  onClick={() => window.location.href = '/project/create'}
                   className="flex items-center gap-2 bg-[#FAFAFA] text-[#09090B] px-3.5 py-1.5 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors"
                 >
                   <Plus className="w-4 h-4" />

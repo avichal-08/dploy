@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
@@ -22,8 +23,17 @@ func InspectRepository(project models.Project) {
 	inspectDir := filepath.Join(cwd, "dploy-clones", "inspect-"+project.ID)
 
 	defer func() {
-		if err := os.RemoveAll(inspectDir); err != nil {
-			slog.Error("failed to clean up inspection directory", "dir", inspectDir, "error", err)
+		var removeErr error
+		for i := 0; i < 5; i++ {
+			removeErr = os.RemoveAll(inspectDir)
+			if removeErr == nil {
+				return
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+
+		if removeErr != nil {
+			slog.Error("failed to clean up inspection directory after retries", "dir", inspectDir, "error", removeErr)
 		}
 	}()
 
