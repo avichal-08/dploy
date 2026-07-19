@@ -9,6 +9,9 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/avichal-08/dploy/internal/db"
+	"github.com/avichal-08/dploy/internal/models"
 )
 
 func BuildImage(buildDir string, deploymentID string, logWriter io.Writer) (string, error) {
@@ -34,20 +37,18 @@ func BuildImage(buildDir string, deploymentID string, logWriter io.Writer) (stri
 	return buildLogs.String(), nil
 }
 
-func RunContainer(deploymentID string, logWriter io.Writer) (string, string, string, error) {
+func RunContainer(deploymentID string) (string, string, string, error) {
 	imageName := fmt.Sprintf("dploy-img-%s", deploymentID)
 	containerName := fmt.Sprintf("dploy-cnt-%s", deploymentID)
 	var runLogs bytes.Buffer
-
-	multiWriter := io.MultiWriter(&runLogs, logWriter)
 
 	slog.Info("starting container with resource limits", "container", containerName)
 	runCtx, cancelRun := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelRun()
 
 	runCmd := exec.CommandContext(runCtx, "docker", "run", "-d", "-P", "--memory=512m", "--cpus=0.5", "--name", containerName, imageName)
-	runCmd.Stdout = multiWriter
-	runCmd.Stderr = multiWriter
+	runCmd.Stdout = &runLogs
+	runCmd.Stderr = &runLogs
 
 	if err := runCmd.Run(); err != nil {
 		slog.Error("docker run failed", "error", err)
@@ -89,4 +90,32 @@ func StopAndRemoveContainer(containerID string) error {
 	}
 
 	return nil
+}
+
+func CleanupOldImages(projectID string) {
+	var deployments []models.Deployment
+	if err := db.DB.Where("project_id = ? AND status = ?", projectID, "success").Order("created_at desc").Find(&deployments).Error; err != nil {
+		slog.Error("failed to fetch deployments for image cleanup", "error", err)
+		return
+	}
+
+	const keepCount = 3
+	if len(deployments) <= keepCount {
+		return
+	}
+
+	deploymentsToDelete := deployments[keepCount:]
+
+	for _, dep := range deploymentsToDelete {
+		imageName := fmt.Sprintf("dploy-img-%s", dep.ID)
+
+		cmd := exec.Command("docker", "rmi", "-f", imageName)
+		if err := cmd.Run(); err != nil {
+			slog.Warn("failed to remove old docker image", "image", imageName, "error", err)
+		} else {
+			slog.Info("cleaned up old docker image", "image", imageName)
+		}
+	}
+
+	exec.Command("docker", "image", "prune", "-f").Run()
 }

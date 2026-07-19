@@ -13,7 +13,10 @@ import {
   AlertCircle,
   Clock,
   GitCommit,
-  ChevronRight
+  ChevronRight,
+  MoreVertical,
+  RotateCcw,
+  Loader2
 } from "lucide-react";
 
 const API_BASE = "http://localhost:8080/api";
@@ -23,25 +26,60 @@ export default function ProjectOverviewClient({ projectId }: { projectId?: strin
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [isRollingBack, setIsRollingBack] = useState<string | null>(null);
+
+  const fetchProject = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/project/${projectId}`);
+      if (!res.ok) throw new Error("Project not found or failed to load");
+
+      const data = await res.json();
+      setProject(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!projectId) return;
-
-    const fetchProject = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/project/${projectId}`);
-        if (!res.ok) throw new Error("Project not found or failed to load");
-
-        const data = await res.json();
-        setProject(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchProject();
   }, [projectId]);
+
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('.rollback-menu-btn')) return;
+      setOpenMenuId(null);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const handleRollback = async (e: React.MouseEvent, deploymentId: string) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    setIsRollingBack(deploymentId);
+
+    try {
+      const res = await fetch(`${API_BASE}/deployments/${deploymentId}/rollback`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to rollback deployment");
+      }
+
+      await fetchProject();
+    } catch (err: any) {
+      alert(`Rollback failed: ${err.message}`);
+    } finally {
+      setIsRollingBack(null);
+    }
+  };
 
   const getStatusColor = (rawStatus: string) => {
     const status = (rawStatus || "").toLowerCase();
@@ -123,6 +161,12 @@ export default function ProjectOverviewClient({ projectId }: { projectId?: strin
     const dateB = new Date(b.CreatedAt || b.created_at).getTime();
     return dateB - dateA;
   });
+
+  const successfulDeployments = sortedDeployments.filter(
+    (dep) => (dep.Status || dep.status) === "success" || (dep.Status || dep.status) === "deployed"
+  );
+
+  const eligibleRollbackIds = successfulDeployments.slice(0, 3).map((dep) => dep.ID || dep.id);
 
   return (
     <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] font-sans antialiased selection:bg-blue-500/30 flex flex-col">
@@ -215,7 +259,7 @@ export default function ProjectOverviewClient({ projectId }: { projectId?: strin
                 <div className="grid grid-cols-3 text-sm">
                   <span className="text-[#A1A1AA]">Deployment ID</span>
                   <span className="col-span-2 text-[#FAFAFA] font-mono text-xs truncate" title={activeDeployment || "None"}>
-                    {activeDeployment || "No active deployment"}
+                    {activeDeployment ? activeDeployment.substring(0, 12) + "..." : "No active deployment"}
                   </span>
                 </div>
               </div>
@@ -245,7 +289,7 @@ export default function ProjectOverviewClient({ projectId }: { projectId?: strin
             </div>
           </div>
 
-          <div className="bg-[#111113] border border-[#27272A] rounded-md overflow-hidden">
+          <div className="bg-[#111113] border border-[#27272A] rounded-md overflow-visible relative z-0">
             <div className="p-6 border-b border-[#27272A] flex items-center justify-between">
               <h2 className="text-lg font-semibold text-[#FAFAFA] flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[#A1A1AA]" />
@@ -265,11 +309,14 @@ export default function ProjectOverviewClient({ projectId }: { projectId?: strin
                   const depCommit = dep.CommitSHA || dep.commit_sha || "HEAD";
                   const depCreatedAt = dep.CreatedAt || dep.created_at;
 
+                  const isActive = depId === activeDeployment;
+                  const isEligibleForRollback = !isActive && eligibleRollbackIds.includes(depId);
+
                   return (
                     <div
                       key={depId}
                       onClick={() => window.location.href = `/project/${projectId}/${depId}`}
-                      className="group flex items-center justify-between p-4 hover:bg-[#27272A]/30 transition-colors cursor-pointer"
+                      className={`group flex items-center justify-between p-4 hover:bg-[#27272A]/30 transition-colors cursor-pointer relative ${openMenuId === depId ? 'z-50' : 'z-0'}`}
                     >
                       <div className="flex items-center gap-4">
                         <div className={`flex items-center gap-2 w-28 px-2 py-1 rounded-md border text-xs font-medium capitalize ${getStatusColor(depStatus)}`}>
@@ -283,13 +330,56 @@ export default function ProjectOverviewClient({ projectId }: { projectId?: strin
                             {depCommit.substring(0, 7)}
                           </span>
                         </div>
+
+                        {isActive && (
+                          <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider ml-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            Active
+                          </div>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-4 md:gap-6">
                         <span className="text-sm text-[#A1A1AA] hidden sm:block">
                           {formatDate(depCreatedAt)}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-[#52525B] group-hover:text-[#FAFAFA] transition-colors" />
+
+                        <div className="flex items-center gap-2">
+                          {isEligibleForRollback && (
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setOpenMenuId(openMenuId === depId ? null : depId);
+                                }}
+                                className="rollback-menu-btn p-1 rounded text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] transition-colors"
+                              >
+                                {isRollingBack === depId ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <MoreVertical className="w-4 h-4" />
+                                )}
+                              </button>
+
+                              {openMenuId === depId && (
+                                <div className="absolute right-0 mt-1 w-40 bg-[#111113] border border-[#27272A] rounded-md shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleRollback(e, depId);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[#FAFAFA] hover:bg-[#27272A] transition-colors text-left"
+                                  >
+                                    <RotateCcw className="w-4 h-4" />
+                                    Rollback Here
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <ChevronRight className="w-4 h-4 text-[#52525B] group-hover:text-[#FAFAFA] transition-colors" />
+                        </div>
                       </div>
                     </div>
                   );

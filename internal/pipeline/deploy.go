@@ -4,7 +4,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -82,7 +81,7 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 	slog.Info("image built successfully, proceeding to running container", "deployment_id", deployment.ID)
 	logWriter.Write([]byte("--> Image built successfully. Starting container...\n"))
 
-	containerID, portStr, runLogs, runErr := RunContainer(deployment.ID, logWriter)
+	containerID, portStr, runLogs, runErr := RunContainer(deployment.ID)
 
 	finalLogs := buildLogs + "\n--- RUN PHASE ---\n" + runLogs
 
@@ -123,7 +122,7 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		var oldDeployment models.Deployment
 		if err := db.DB.First(&oldDeployment, "id = ?", oldDeploymentID).Error; err == nil {
 			if oldDeployment.ContainerID != "" {
-				time.Sleep(2 * time.Second)
+				time.Sleep(2 * time.Second) //sleep so that the container has time to stop gracefully after serving ongoing requests
 				if err := StopAndRemoveContainer(oldDeployment.ContainerID); err != nil {
 					slog.Warn("failed to cleanup old container, it might be orphaned", "old_container", oldDeployment.ContainerID, "error", err)
 				} else {
@@ -133,9 +132,7 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		}
 	}
 
-	go func() {
-		exec.Command("docker", "image", "prune", "-f").Run()
-	}()
+	go CleanupOldImages(project.ID)
 
 	slog.Info("deployment finished completely", "deployment_id", deployment.ID, "internal_port", internalPort)
 }

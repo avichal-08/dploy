@@ -52,6 +52,7 @@ func main() {
 
 	mux.HandleFunc("POST /api/deployments", api.HandleCreateDeployment(asynqClient))
 	mux.HandleFunc("GET /api/deployments/{id}", api.HandleGetDeployment)
+	mux.HandleFunc("POST /api/deployments/{id}/rollback", api.HandleRollback)
 
 	subscriber := &pubsub.RedisSubscriber{Client: redisClient}
 
