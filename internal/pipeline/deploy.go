@@ -24,8 +24,16 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 	buildDir := filepath.Join(cwd, "dploy-clones", "build-"+deployment.ID)
 
 	defer func() {
-		if err := os.RemoveAll(buildDir); err != nil {
-			slog.Error("CRITICAL: failed to clean up build directory", "dir", buildDir, "error", err)
+		var removeErr error
+		for i := 0; i < 5; i++ {
+			removeErr = os.RemoveAll(buildDir)
+			if removeErr == nil {
+				return
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+		if removeErr != nil {
+			slog.Error("CRITICAL: failed to clean up build directory after retries", "dir", buildDir, "error", removeErr)
 		}
 	}()
 
@@ -51,18 +59,10 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"commit_message": strings.TrimSpace(commitMessage),
 	})
 
-	if err := GenerateDockerfile(buildDir, project.Framework); err != nil {
+	if err := GenerateDockerfile(buildDir, project.Framework, project.BuildCommand, project.RunCommand); err != nil {
 		slog.Error("failed to generate dockerfile", "error", err)
 		failDeployment(deployment.ID, project.ID, "Dockerfile generation failed: "+err.Error())
 		return
-	}
-
-	if project.BuildCommand != "" || project.RunCommand != "" {
-		if err := injectCustomCommands(buildDir, project.BuildCommand, project.RunCommand); err != nil {
-			slog.Error("failed to inject custom commands", "error", err)
-			failDeployment(deployment.ID, project.ID, "Command injection failed: "+err.Error())
-			return
-		}
 	}
 
 	logWriter.Write([]byte("--> Starting Docker build phase...\n"))
@@ -71,8 +71,9 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 	if buildErr != nil {
 		slog.Error("image build failed", "error", buildErr)
 		db.DB.Model(&deployment).Updates(map[string]interface{}{
-			"status":     "failed",
-			"build_logs": buildLogs,
+			"status":      "failed",
+			"build_logs":  buildLogs,
+			"finished_at": time.Now(),
 		})
 		db.DB.Model(&project).Update("status", "failed")
 		return
@@ -88,8 +89,9 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 	if runErr != nil {
 		slog.Error("container run failed", "error", runErr)
 		db.DB.Model(&deployment).Updates(map[string]interface{}{
-			"status":     "failed",
-			"build_logs": finalLogs,
+			"status":      "failed",
+			"build_logs":  finalLogs,
+			"finished_at": time.Now(),
 		})
 		db.DB.Model(&project).Update("status", "failed")
 		return
@@ -102,6 +104,7 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"container_id":  containerID,
 		"internal_port": internalPort,
 		"build_logs":    finalLogs,
+		"finished_at":   time.Now(),
 	})
 
 	var oldDeploymentID string
@@ -138,31 +141,10 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 }
 
 func failDeployment(deploymentID string, projectID string, reason string) {
-	db.DB.Model(&models.Deployment{}).Where("id = ?", deploymentID).Updates(map[string]interface{}{
-		"status":     "failed",
-		"build_logs": reason,
+	db.DB.Model(&models.Deployment{ID: deploymentID}).Updates(map[string]interface{}{
+		"status":      "failed",
+		"build_logs":  reason,
+		"finished_at": time.Now(),
 	})
-	db.DB.Model(&models.Project{}).Where("id = ?", projectID).Update("status", "failed")
-}
-
-func injectCustomCommands(buildDir string, buildCmd string, runCmd string) error {
-	dockerfilePath := filepath.Join(buildDir, "Dockerfile")
-	contentBytes, err := os.ReadFile(dockerfilePath)
-	if err != nil {
-		return err
-	}
-	content := string(contentBytes)
-
-	if buildCmd != "" {
-		content = strings.Replace(content, "RUN npm run build", "RUN "+buildCmd, 1)
-	}
-
-	if runCmd != "" {
-		parts := strings.Fields(runCmd)
-		formattedCmd := `CMD ["` + strings.Join(parts, `", "`) + `"]`
-		content = strings.Replace(content, `CMD ["npm", "start"]`, formattedCmd, 1)
-		content = strings.Replace(content, `CMD ["python", "main.py"]`, formattedCmd, 1)
-	}
-
-	return os.WriteFile(dockerfilePath, []byte(content), 0644)
+	db.DB.Model(&models.Project{ID: projectID}).Update("status", "failed")
 }
