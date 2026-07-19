@@ -4,9 +4,11 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
@@ -101,10 +103,36 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"internal_port": internalPort,
 		"build_logs":    finalLogs,
 	})
+
+	var oldDeploymentID string
+	if project.ActiveDeploymentID != nil {
+		oldDeploymentID = *project.ActiveDeploymentID
+	}
+
 	db.DB.Model(&project).Updates(map[string]interface{}{
 		"status":               "deployed",
 		"active_deployment_id": deployment.ID,
 	})
+
+	slog.Info("traffic safely routed to new deployment", "deployment_id", deployment.ID, "internal_port", internalPort)
+
+	if oldDeploymentID != "" && oldDeploymentID != deployment.ID {
+		var oldDeployment models.Deployment
+		if err := db.DB.First(&oldDeployment, "id = ?", oldDeploymentID).Error; err == nil {
+			if oldDeployment.ContainerID != "" {
+				time.Sleep(2 * time.Second)
+				if err := StopAndRemoveContainer(oldDeployment.ContainerID); err != nil {
+					slog.Warn("failed to cleanup old container, it might be orphaned", "old_container", oldDeployment.ContainerID, "error", err)
+				} else {
+					slog.Info("gracefully destroyed old container", "old_container", oldDeployment.ContainerID)
+				}
+			}
+		}
+	}
+
+	go func() {
+		exec.Command("docker", "image", "prune", "-f").Run()
+	}()
 
 	slog.Info("deployment finished completely", "deployment_id", deployment.ID, "internal_port", internalPort)
 }

@@ -75,3 +75,18 @@ func RunContainer(deploymentID string, logWriter io.Writer) (string, string, str
 
 	return rawContainerID, extractedPort, runLogs.String(), nil
 }
+
+func StopAndRemoveContainer(containerID string) error {
+	if containerID == "" {
+		return nil
+	}
+
+	slog.Info("stopping and removing previous container", "container_id", containerID)
+
+	cmd := exec.Command("docker", "rm", "-f", containerID)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to remove container %s: %v", containerID, err)
+	}
+
+	return nil
+}
