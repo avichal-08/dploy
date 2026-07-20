@@ -27,7 +27,16 @@ type Project struct {
 	CreatedAt          time.Time `gorm:"autoCreateTime"`
 	ActiveDeploymentID *string   `gorm:"type:uuid"`
 
+	Envs        []ProjectEnv `gorm:"constraint:OnDelete:CASCADE;"`
 	Deployments []Deployment `gorm:"constraint:OnDelete:CASCADE;"`
+}
+
+type ProjectEnv struct {
+	ID        string    `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	ProjectID string    `gorm:"type:uuid;not null;index"`
+	Key       string    `gorm:"not null;type:varchar(255)"`
+	Value     string    `gorm:"not null;type:text"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
 }
 
 type Deployment struct {
