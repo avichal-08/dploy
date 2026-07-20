@@ -57,6 +57,7 @@ func main() {
 	subscriber := &pubsub.RedisSubscriber{Client: redisClient}
 
 	mux.HandleFunc("GET /api/deployments/{id}/logs", api.HandleLogStream(subscriber))
+	mux.HandleFunc("GET /api/deployments/{id}/logs/runtime", api.HandleGetRuntimeLogs)
 
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusOK, map[string]string{"status": "operational"})

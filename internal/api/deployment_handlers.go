@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -170,4 +171,42 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJSON(w, http.StatusOK, map[string]string{"message": "Rollback successful", "new_container_id": containerID})
+}
+
+func HandleRuntimeLogs(w http.ResponseWriter, r *http.Request) {
+	deploymentID := r.PathValue("id")
+	if deploymentID == "" {
+		http.Error(w, "Deployment ID is required", http.StatusBadRequest)
+		return
+	}
+
+	var deployment models.Deployment
+	if err := db.DB.First(&deployment, "id = ?", deploymentID).Error; err != nil {
+		slog.Error("failed to fetch deployment for logs", "error", err, "deployment_id", deploymentID)
+		http.Error(w, "Deployment not found", http.StatusNotFound)
+		return
+	}
+
+	if deployment.ContainerID == "" || deployment.Status != "success" && deployment.Status != "running" && deployment.Status != "deployed" {
+		http.Error(w, "Deployment is not actively running", http.StatusBadRequest)
+		return
+	}
+
+	slog.Info("starting log fetching", "container_id", deployment.ContainerID)
+	cmd := exec.Command("docker", "logs", "--tail", "200", deployment.ContainerID)
+
+	var outputBuffer bytes.Buffer
+	cmd.Stdout = &outputBuffer
+	cmd.Stderr = &outputBuffer
+
+	if err := cmd.Run(); err != nil {
+		slog.Error("failed to start docker logs command", "error", err)
+		WriteError(w, http.StatusInternalServerError, "Failed to fetch logs: "+err.Error())
+		return
+	}
+
+	utcTimeNow := time.Now().UTC()
+
+	WriteJSON(w, http.StatusOK, map[string]string{"fetched_at": utcTimeNow.String(), "logs": outputBuffer.String()})
+
 }
