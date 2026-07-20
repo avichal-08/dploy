@@ -173,7 +173,7 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]string{"message": "Rollback successful", "new_container_id": containerID})
 }
 
-func HandleRuntimeLogs(w http.ResponseWriter, r *http.Request) {
+func HandleGetRuntimeLogs(w http.ResponseWriter, r *http.Request) {
 	deploymentID := r.PathValue("id")
 	if deploymentID == "" {
 		http.Error(w, "Deployment ID is required", http.StatusBadRequest)
