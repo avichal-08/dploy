@@ -51,7 +51,7 @@ func main() {
 	mux.HandleFunc("GET /api/project/{id}", api.HandleGetProject)
 
 	mux.HandleFunc("GET /api/projects/{id}/envs", api.HandleGetEnvs)
-	mux.HandleFunc("POST /api/projects/{id}/envs", api.HandleCreateEnv)
+	mux.HandleFunc("POST /api/projects/{id}/envs", api.HandleCreateEnvs)
 
 	mux.HandleFunc("PUT /api/envs/{envId}", api.HandleUpdateEnv)
 	mux.HandleFunc("DELETE /api/envs/{envId}", api.HandleDeleteEnv)

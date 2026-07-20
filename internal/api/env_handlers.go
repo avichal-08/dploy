@@ -34,41 +34,46 @@ func HandleGetEnvs(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, envs)
 }
 
-func HandleCreateEnv(w http.ResponseWriter, r *http.Request) {
+func HandleCreateEnvs(w http.ResponseWriter, r *http.Request) {
 	projectID := r.PathValue("id")
 	if projectID == "" {
 		WriteError(w, http.StatusBadRequest, "Project ID is required")
 		return
 	}
 
-	var req EnvRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid JSON payload")
+	var reqs []EnvRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqs); err != nil {
+		WriteError(w, http.StatusBadRequest, "Invalid JSON payload. Expected an array of environment variables.")
 		return
 	}
 
-	req.Key = strings.TrimSpace(req.Key)
-	if req.Key == "" || req.Value == "" {
-		WriteError(w, http.StatusBadRequest, "Key and Value are required")
+	var envsToInsert []models.ProjectEnv
+	for _, req := range reqs {
+		key := strings.TrimSpace(req.Key)
+		if key != "" && req.Value != "" {
+			envsToInsert = append(envsToInsert, models.ProjectEnv{
+				ProjectID: projectID,
+				Key:       key,
+				Value:     req.Value,
+			})
+		}
+	}
+
+	if len(envsToInsert) == 0 {
+		WriteError(w, http.StatusBadRequest, "No valid environment variables provided")
 		return
 	}
 
-	env := models.ProjectEnv{
-		ProjectID: projectID,
-		Key:       req.Key,
-		Value:     req.Value,
-	}
-
-	if err := db.DB.Create(&env).Error; err != nil {
+	if err := db.DB.Create(&envsToInsert).Error; err != nil {
 		if strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate") {
-			WriteError(w, http.StatusConflict, "An environment variable with this key already exists for this project.")
+			WriteError(w, http.StatusConflict, "One or more keys already exist for this project.")
 			return
 		}
-		WriteError(w, http.StatusInternalServerError, "Failed to create environment variable")
+		WriteError(w, http.StatusInternalServerError, "Failed to save environment variables")
 		return
 	}
 
-	WriteJSON(w, http.StatusCreated, env)
+	WriteJSON(w, http.StatusCreated, map[string]string{"message": "Environment variables saved successfully"})
 }
 
 func HandleUpdateEnv(w http.ResponseWriter, r *http.Request) {
