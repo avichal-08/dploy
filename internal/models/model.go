@@ -51,3 +51,16 @@ type Deployment struct {
 	CreatedAt     time.Time `gorm:"autoCreateTime"`
 	FinishedAt    *time.Time
 }
+
+type Replica struct {
+	ID           string    `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ProjectID    string    `gorm:"type:uuid;not null"`
+	DeploymentID string    `gorm:"type:uuid;not null"`
+	ContainerID  string    `gorm:"type:varchar(255);uniqueIndex"`
+	Status       string    `gorm:"type:varchar(50);default:'starting'"`
+	InternalPort int       `gorm:"type:int"`
+	RestartCount int       `gorm:"type:int;default:0"`
+	LastCrashAt  time.Time `gorm:"type:timestamp"`
+	CreatedAt    time.Time `gorm:"autoCreateTime"`
+	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
+}
