@@ -24,7 +24,16 @@ func BuildImage(buildDir string, deploymentID string, logWriter io.Writer) (stri
 	buildCtx, cancelBuild := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancelBuild()
 
-	buildCmd := exec.CommandContext(buildCtx, "docker", "build", "-t", imageName, ".")
+	buildArgs := []string{"build", "-t", imageName}
+
+	envs := getProjectEnvs(deploymentID)
+	for _, env := range envs {
+		buildArgs = append(buildArgs, "--build-arg", fmt.Sprintf("%s=%s", env.Key, env.Value))
+	}
+
+	buildArgs = append(buildArgs, ".")
+
+	buildCmd := exec.CommandContext(buildCtx, "docker", buildArgs...)
 	buildCmd.Dir = buildDir
 	buildCmd.Stdout = multiWriter
 	buildCmd.Stderr = multiWriter
@@ -46,7 +55,16 @@ func RunContainer(deploymentID string) (string, string, string, error) {
 	runCtx, cancelRun := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelRun()
 
-	runCmd := exec.CommandContext(runCtx, "docker", "run", "-d", "-P", "--memory=512m", "--cpus=0.5", "--name", containerName, imageName)
+	runArgs := []string{"run", "-d", "-P", "--memory=512m", "--cpus=0.5", "--name", containerName}
+
+	envs := getProjectEnvs(deploymentID)
+	for _, env := range envs {
+		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", env.Key, env.Value))
+	}
+
+	runArgs = append(runArgs, imageName)
+
+	runCmd := exec.CommandContext(runCtx, "docker", runArgs...)
 	runCmd.Stdout = &runLogs
 	runCmd.Stderr = &runLogs
 
@@ -118,4 +136,16 @@ func CleanupOldImages(projectID string) {
 	}
 
 	exec.Command("docker", "image", "prune", "-f").Run()
+}
+
+func getProjectEnvs(deploymentID string) []models.ProjectEnv {
+	var deployment models.Deployment
+	if err := db.DB.First(&deployment, "id = ?", deploymentID).Error; err != nil {
+		slog.Error("failed to fetch deployment for envs", "error", err)
+		return nil
+	}
+
+	var envs []models.ProjectEnv
+	db.DB.Where("project_id = ?", deployment.ProjectID).Find(&envs)
+	return envs
 }
