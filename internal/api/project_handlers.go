@@ -69,3 +69,18 @@ func HandleGetProject(w http.ResponseWriter, r *http.Request) {
 
 	WriteJSON(w, http.StatusOK, project)
 }
+
+func HandleDeleteProject(w http.ResponseWriter, r *http.Request) {
+	projectID := r.PathValue("id")
+	if projectID == "" {
+		WriteError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
+
+	if err := db.DB.Delete(&models.Project{}, "id = ?", projectID).Error; err != nil {
+		WriteError(w, http.StatusInternalServerError, "Failed to delete project")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, nil)
+}

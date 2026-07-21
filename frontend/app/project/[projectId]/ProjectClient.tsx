@@ -184,7 +184,7 @@ export default function ProjectOverviewClient({
 
       setIsDeletingProject(true);
       try {
-         const res = await fetch(`${API_BASE}/projects/${projectId}`, {
+         const res = await fetch(`${API_BASE}/project/${projectId}`, {
             method: "DELETE",
          });
 
