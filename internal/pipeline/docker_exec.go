@@ -14,7 +14,7 @@ import (
 	"github.com/avichal-08/dploy/internal/models"
 )
 
-func BuildImage(buildDir string, deploymentID string, logWriter io.Writer) (string, error) {
+func BuildImage(buildDir string, deploymentID string, isEnvRequired bool, envs *[]models.ProjectEnv, logWriter io.Writer) (string, error) {
 	imageName := fmt.Sprintf("dploy-img-%s", deploymentID)
 	var buildLogs bytes.Buffer
 
@@ -26,9 +26,10 @@ func BuildImage(buildDir string, deploymentID string, logWriter io.Writer) (stri
 
 	buildArgs := []string{"build", "-t", imageName}
 
-	envs := getProjectEnvs(deploymentID)
-	for _, env := range envs {
-		buildArgs = append(buildArgs, "--build-arg", fmt.Sprintf("%s=%s", env.Key, env.Value))
+	if isEnvRequired && envs != nil {
+		for _, env := range *envs {
+			buildArgs = append(buildArgs, "--build-arg", fmt.Sprintf("%s=%s", env.Key, env.Value))
+		}
 	}
 
 	buildArgs = append(buildArgs, ".")
@@ -46,7 +47,7 @@ func BuildImage(buildDir string, deploymentID string, logWriter io.Writer) (stri
 	return buildLogs.String(), nil
 }
 
-func RunContainer(deploymentID string) (string, string, string, error) {
+func RunContainer(deploymentID string, envs *[]models.ProjectEnv) (string, string, string, error) {
 	imageName := fmt.Sprintf("dploy-img-%s", deploymentID)
 	containerName := fmt.Sprintf("dploy-cnt-%s", deploymentID)
 	var runLogs bytes.Buffer
@@ -57,9 +58,10 @@ func RunContainer(deploymentID string) (string, string, string, error) {
 
 	runArgs := []string{"run", "-d", "-P", "--memory=512m", "--cpus=0.5", "--name", containerName}
 
-	envs := getProjectEnvs(deploymentID)
-	for _, env := range envs {
-		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", env.Key, env.Value))
+	if envs != nil {
+		for _, env := range *envs {
+			runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", env.Key, env.Value))
+		}
 	}
 
 	runArgs = append(runArgs, imageName)
@@ -136,16 +138,4 @@ func CleanupOldImages(projectID string) {
 	}
 
 	exec.Command("docker", "image", "prune", "-f").Run()
-}
-
-func getProjectEnvs(deploymentID string) []models.ProjectEnv {
-	var deployment models.Deployment
-	if err := db.DB.First(&deployment, "id = ?", deploymentID).Error; err != nil {
-		slog.Error("failed to fetch deployment for envs", "error", err)
-		return nil
-	}
-
-	var envs []models.ProjectEnv
-	db.DB.Where("project_id = ?", deployment.ProjectID).Find(&envs)
-	return envs
 }

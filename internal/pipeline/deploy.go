@@ -66,7 +66,12 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 
 	logWriter.Write([]byte("--> Starting Docker build phase...\n"))
 
-	buildLogs, buildErr := BuildImage(buildDir, deployment.ID, logWriter)
+	framework := strings.ToLower(project.Framework)
+	isEnvRequired := framework == "vite" || framework == "nextjs" || framework == "static-html"
+
+	envs := getProjectEnvs(deployment.ID)
+
+	buildLogs, buildErr := BuildImage(buildDir, deployment.ID, isEnvRequired, &envs, logWriter)
 	if buildErr != nil {
 		slog.Error("image build failed", "error", buildErr)
 		db.DB.Model(&deployment).Updates(map[string]interface{}{
@@ -81,7 +86,7 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 	slog.Info("image built successfully, proceeding to running container", "deployment_id", deployment.ID)
 	logWriter.Write([]byte("--> Image built successfully. Starting container...\n"))
 
-	containerID, portStr, runLogs, runErr := RunContainer(deployment.ID)
+	containerID, portStr, runLogs, runErr := RunContainer(deployment.ID, &envs)
 
 	finalLogs := buildLogs + "\n--- RUN PHASE ---\n" + runLogs
 
@@ -144,4 +149,16 @@ func failDeployment(deploymentID string, projectID string, reason string) {
 		"finished_at": time.Now(),
 	})
 	db.DB.Model(&models.Project{ID: projectID}).Update("status", "failed")
+}
+
+func getProjectEnvs(deploymentID string) []models.ProjectEnv {
+	var deployment models.Deployment
+	if err := db.DB.First(&deployment, "id = ?", deploymentID).Error; err != nil {
+		slog.Error("failed to fetch deployment for envs", "error", err)
+		return nil
+	}
+
+	var envs []models.ProjectEnv
+	db.DB.Where("project_id = ?", deployment.ProjectID).Find(&envs)
+	return envs
 }
