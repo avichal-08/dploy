@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/avichal-08/dploy/internal/db"
+	"github.com/avichal-08/dploy/internal/helper"
 	"github.com/avichal-08/dploy/internal/models"
 	"github.com/avichal-08/dploy/internal/pipeline"
 	"github.com/avichal-08/dploy/internal/tasks"
@@ -70,9 +71,16 @@ func HandleCreateDeployment(asynqClient *asynq.Client) http.HandlerFunc {
 
 		task, err := tasks.NewDeployTask(project.ID, deployment.ID)
 		if err != nil {
-
+			slog.Error("failed to create deployment task", "error", err)
+			WriteError(w, http.StatusInternalServerError, "failed to create deployment task")
+			return
 		}
 		info, err := asynqClient.Enqueue(task)
+		if err != nil {
+			slog.Error("failed to enqueue deployment task", "error", err)
+			WriteError(w, http.StatusInternalServerError, "failed to enqueue deployment task")
+			return
+		}
 		slog.Info("Enqueued Deployment Task", "task_id", info.ID, "queue", info.Queue)
 
 		WriteJSON(w, http.StatusCreated, deployment)
@@ -130,8 +138,16 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Info("fetching project envs", "deployment_id", deployment.ID)
+	envs, err := helper.GetProjectEnvs(deployment.ID)
+	if err != nil {
+		slog.Error("failed to fetch project envs", "error", err)
+		WriteError(w, http.StatusInternalServerError, "Failed to fetch project envs")
+		return
+	}
+
 	slog.Info("starting rollback container", "deployment_id", deployment.ID)
-	containerID, portStr, _, runErr := pipeline.RunContainer(deployment.ID)
+	containerID, portStr, _, runErr := pipeline.RunContainer(deployment.ID, &envs)
 	if runErr != nil {
 		slog.Error("failed to start container during rollback", "error", runErr)
 		WriteError(w, http.StatusInternalServerError, "Failed to start rollback container")

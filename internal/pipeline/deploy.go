@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/avichal-08/dploy/internal/db"
+	"github.com/avichal-08/dploy/internal/helper"
 	"github.com/avichal-08/dploy/internal/models"
 )
 
@@ -69,7 +70,12 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 	framework := strings.ToLower(project.Framework)
 	isEnvRequired := framework == "vite" || framework == "nextjs" || framework == "static-html"
 
-	envs := getProjectEnvs(deployment.ID)
+	envs, err := helper.GetProjectEnvs(deployment.ID)
+	if err != nil {
+		slog.Error("failed to fetch project envs", "error", err)
+		failDeployment(deployment.ID, project.ID, "Failed to fetch project envs: "+err.Error())
+		return
+	}
 
 	buildLogs, buildErr := BuildImage(buildDir, deployment.ID, isEnvRequired, &envs, logWriter)
 	if buildErr != nil {
@@ -149,16 +155,4 @@ func failDeployment(deploymentID string, projectID string, reason string) {
 		"finished_at": time.Now(),
 	})
 	db.DB.Model(&models.Project{ID: projectID}).Update("status", "failed")
-}
-
-func getProjectEnvs(deploymentID string) []models.ProjectEnv {
-	var deployment models.Deployment
-	if err := db.DB.First(&deployment, "id = ?", deploymentID).Error; err != nil {
-		slog.Error("failed to fetch deployment for envs", "error", err)
-		return nil
-	}
-
-	var envs []models.ProjectEnv
-	db.DB.Where("project_id = ?", deployment.ProjectID).Find(&envs)
-	return envs
 }
