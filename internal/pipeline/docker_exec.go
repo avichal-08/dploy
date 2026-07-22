@@ -47,9 +47,15 @@ func BuildImage(buildDir string, deploymentID string, isEnvRequired bool, envs *
 	return buildLogs.String(), nil
 }
 
-func RunContainer(deploymentID string, envs *[]models.ProjectEnv) (string, string, string, error) {
+func RunReplica(deploymentID string, replicaID string, envs *[]models.ProjectEnv) (string, string, string, error) {
 	imageName := fmt.Sprintf("dploy-img-%s", deploymentID)
-	containerName := fmt.Sprintf("dploy-cnt-%s", deploymentID)
+
+	shortReplica := replicaID
+	if len(shortReplica) > 8 {
+		shortReplica = shortReplica[:8]
+	}
+	containerName := fmt.Sprintf("dploy-cnt-%s-%s", deploymentID[:8], shortReplica)
+
 	var runLogs bytes.Buffer
 
 	slog.Info("starting container with resource limits", "container", containerName)

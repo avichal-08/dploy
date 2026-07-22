@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/avichal-08/dploy/internal/db"
-	"github.com/avichal-08/dploy/internal/helper"
 	"github.com/avichal-08/dploy/internal/models"
 	"github.com/avichal-08/dploy/internal/pipeline"
 	"github.com/avichal-08/dploy/internal/tasks"
@@ -138,19 +137,23 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("fetching project envs", "deployment_id", deployment.ID)
-	envs, err := helper.GetProjectEnvs(deployment.ID)
-	if err != nil {
-		slog.Error("failed to fetch project envs", "error", err)
-		WriteError(w, http.StatusInternalServerError, "Failed to fetch project envs")
-		return
-	}
+	slog.Info("starting rollback replica", "deployment_id", deployment.ID)
 
-	slog.Info("starting rollback container", "deployment_id", deployment.ID)
-	containerID, portStr, _, runErr := pipeline.RunContainer(deployment.ID, &envs)
+	replica := models.Replica{
+		ProjectID:    project.ID,
+		DeploymentID: deployment.ID,
+		Status:       "starting",
+	}
+	db.DB.Create(&replica)
+
+	var envs []models.ProjectEnv
+	db.DB.Where("project_id = ?", project.ID).Find(&envs)
+
+	containerID, portStr, _, runErr := pipeline.RunReplica(deployment.ID, replica.ID, &envs)
 	if runErr != nil {
-		slog.Error("failed to start container during rollback", "error", runErr)
-		WriteError(w, http.StatusInternalServerError, "Failed to start rollback container")
+		db.DB.Model(&replica).Update("status", "failed")
+		slog.Error("failed to start replica during rollback", "error", runErr)
+		WriteError(w, http.StatusInternalServerError, "Failed to start rollback replica")
 		return
 	}
 
@@ -166,6 +169,12 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		"status":               "deployed",
 	})
 
+	db.DB.Model(&replica).Updates(map[string]interface{}{
+		"container_id":  containerID,
+		"internal_port": internalPort,
+		"status":        "healthy",
+	})
+
 	db.DB.Model(&models.Deployment{ID: deployment.ID}).Updates(map[string]interface{}{
 		"container_id":  containerID,
 		"internal_port": internalPort,
@@ -175,12 +184,17 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 
 	if oldDeploymentID != "" && oldDeploymentID != deployment.ID {
 		go func(oldID string) {
-			var oldDeployment models.Deployment
-			if err := db.DB.First(&oldDeployment, "id = ?", oldID).Error; err == nil {
-				if oldDeployment.ContainerID != "" {
-					time.Sleep(2 * time.Second) // small buffer to let proxy connections drain
-					pipeline.StopAndRemoveContainer(oldDeployment.ContainerID)
-					slog.Info("cleaned up old container after rollback", "container_id", oldDeployment.ContainerID)
+			var oldReplicas []models.Replica
+			if err := db.DB.Where("deployment_id = ? AND status != ?", oldID, "terminated").Find(&oldReplicas).Error; err == nil {
+				time.Sleep(2 * time.Second)
+
+				for _, oldRep := range oldReplicas {
+					db.DB.Model(&oldRep).Update("status", "terminating")
+					if oldRep.ContainerID != "" {
+						pipeline.StopAndRemoveContainer(oldRep.ContainerID)
+						slog.Info("cleaned up old replica after rollback", "container_id", oldRep.ContainerID)
+					}
+					db.DB.Model(&oldRep).Update("status", "terminated")
 				}
 			}
 		}(oldDeploymentID)
@@ -203,13 +217,25 @@ func HandleGetRuntimeLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if deployment.ContainerID == "" || deployment.Status != "success" && deployment.Status != "running" && deployment.Status != "deployed" {
-		http.Error(w, "Deployment is not actively running", http.StatusBadRequest)
+	if deployment.Status != "success" && deployment.Status != "running" && deployment.Status != "deployed" {
+		WriteError(w, http.StatusBadRequest, "Deployment is not actively running")
 		return
 	}
 
-	slog.Info("starting log fetching", "container_id", deployment.ContainerID)
-	cmd := exec.Command("docker", "logs", "--tail", "200", deployment.ContainerID)
+	var replica models.Replica
+	if err := db.DB.Where("deployment_id = ? AND status IN ?", deployment.ID, []string{"healthy", "starting", "crashed"}).Order("created_at desc").First(&replica).Error; err != nil {
+		WriteError(w, http.StatusBadRequest, "No active replicas found for this deployment to stream logs from")
+		return
+	}
+
+	if replica.ContainerID == "" {
+		WriteError(w, http.StatusBadRequest, "Replica is not fully provisioned yet")
+		return
+	}
+
+	slog.Info("starting log fetching", "container_id", replica.ContainerID)
+
+	cmd := exec.Command("docker", "logs", "--tail", "200", replica.ContainerID)
 
 	var outputBuffer bytes.Buffer
 	cmd.Stdout = &outputBuffer
@@ -223,6 +249,8 @@ func HandleGetRuntimeLogs(w http.ResponseWriter, r *http.Request) {
 
 	utcTimeNow := time.Now().UTC()
 
-	WriteJSON(w, http.StatusOK, map[string]string{"fetched_at": utcTimeNow.String(), "logs": outputBuffer.String()})
-
+	WriteJSON(w, http.StatusOK, map[string]string{
+		"fetched_at": utcTimeNow.String(),
+		"logs":       outputBuffer.String(),
+	})
 }

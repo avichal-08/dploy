@@ -92,24 +92,47 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 	slog.Info("image built successfully, proceeding to running container", "deployment_id", deployment.ID)
 	logWriter.Write([]byte("--> Image built successfully. Starting container...\n"))
 
-	containerID, portStr, runLogs, runErr := RunContainer(deployment.ID, &envs)
+	replica := models.Replica{
+		ProjectID:    project.ID,
+		DeploymentID: deployment.ID,
+		Status:       "starting",
+	}
+	if err := db.DB.Create(&replica).Error; err != nil {
+		slog.Error("failed to create replica record", "error", err)
+		failDeployment(deployment.ID, project.ID, "Database error creating replica")
+		return
+	}
+
+	containerID, portStr, runLogs, runErr := RunReplica(deployment.ID, replica.ID, &envs)
 
 	finalLogs := buildLogs + "\n--- RUN PHASE ---\n" + runLogs
 
 	if runErr != nil {
 		slog.Error("container run failed", "error", runErr)
-		db.DB.Model(&deployment).Updates(map[string]interface{}{
+		db.DB.Model(&replica).Update("status", "failed")
+		db.DB.Model(&models.Deployment{ID: deployment.ID}).Updates(map[string]interface{}{
 			"status":      "failed",
 			"build_logs":  finalLogs,
 			"finished_at": time.Now(),
 		})
-		db.DB.Model(&project).Update("status", "failed")
+		db.DB.Model(&models.Project{ID: project.ID}).Update("status", "failed")
 		return
 	}
 
 	internalPort, _ := strconv.Atoi(portStr)
 
-	db.DB.Model(&deployment).Updates(map[string]interface{}{
+	db.DB.Model(&replica).Updates(map[string]interface{}{
+		"container_id":  containerID,
+		"internal_port": internalPort,
+		"status":        "healthy",
+	})
+
+	db.DB.Model(&models.Project{ID: project.ID}).Updates(map[string]interface{}{
+		"status":               "deployed",
+		"active_deployment_id": deployment.ID,
+	})
+
+	db.DB.Model(&models.Deployment{ID: deployment.ID}).Updates(map[string]interface{}{
 		"status":        "success",
 		"container_id":  containerID,
 		"internal_port": internalPort,
@@ -117,28 +140,28 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"finished_at":   time.Now(),
 	})
 
+	slog.Info("traffic safely routed to new deployment", "deployment_id", deployment.ID, "internal_port", internalPort)
+
 	var oldDeploymentID string
 	if project.ActiveDeploymentID != nil {
 		oldDeploymentID = *project.ActiveDeploymentID
 	}
 
-	db.DB.Model(&project).Updates(map[string]interface{}{
-		"status":               "deployed",
-		"active_deployment_id": deployment.ID,
-	})
-
-	slog.Info("traffic safely routed to new deployment", "deployment_id", deployment.ID, "internal_port", internalPort)
-
 	if oldDeploymentID != "" && oldDeploymentID != deployment.ID {
-		var oldDeployment models.Deployment
-		if err := db.DB.First(&oldDeployment, "id = ?", oldDeploymentID).Error; err == nil {
-			if oldDeployment.ContainerID != "" {
-				time.Sleep(2 * time.Second) //sleep so that the container has time to stop gracefully after serving ongoing requests
-				if err := StopAndRemoveContainer(oldDeployment.ContainerID); err != nil {
-					slog.Warn("failed to cleanup old container, it might be orphaned", "old_container", oldDeployment.ContainerID, "error", err)
-				} else {
-					slog.Info("gracefully destroyed old container", "old_container", oldDeployment.ContainerID)
+		var oldReplicas []models.Replica
+		if err := db.DB.Where("deployment_id = ? AND status != ?", oldDeploymentID, "terminated").Find(&oldReplicas).Error; err == nil {
+			time.Sleep(2 * time.Second)
+
+			for _, oldRep := range oldReplicas {
+				db.DB.Model(&oldRep).Update("status", "terminating")
+				if oldRep.ContainerID != "" {
+					if err := StopAndRemoveContainer(oldRep.ContainerID); err != nil {
+						slog.Warn("failed to cleanup old replica", "container", oldRep.ContainerID, "error", err)
+					} else {
+						slog.Info("gracefully destroyed old replica", "container", oldRep.ContainerID)
+					}
 				}
+				db.DB.Model(&oldRep).Update("status", "terminated")
 			}
 		}
 	}

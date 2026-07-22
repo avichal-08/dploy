@@ -12,6 +12,7 @@ import (
 
 	"github.com/avichal-08/dploy/internal/api"
 	"github.com/avichal-08/dploy/internal/db"
+	"github.com/avichal-08/dploy/internal/orchestrator"
 	"github.com/avichal-08/dploy/internal/proxy"
 	"github.com/avichal-08/dploy/internal/pubsub"
 
@@ -81,6 +82,10 @@ func main() {
 	}
 
 	go proxy.StartProxyServer("8000")
+
+	orchCtx, cancelOrchCtx := context.WithCancel(context.Background())
+	defer cancelOrchCtx()
+	orchestrator.StartOrchestrator(orchCtx)
 
 	go func() {
 		slog.Info("Starting Dploy API", "port", srv.Addr)

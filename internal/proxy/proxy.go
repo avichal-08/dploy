@@ -35,20 +35,20 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var deployment models.Deployment
-	if err := db.DB.First(&deployment, "id = ?", *project.ActiveDeploymentID).Error; err != nil {
-		slog.Error("failed to fetch active deployment", "deployment_id", *project.ActiveDeploymentID)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	var replica models.Replica
+	if err := db.DB.Where("deployment_id = ? AND status = ?", *project.ActiveDeploymentID, "healthy").First(&replica).Error; err != nil {
+		slog.Warn("no healthy replicas available", "deployment_id", *project.ActiveDeploymentID)
+		http.Error(w, "Service Unavailable - No healthy instances (503)", http.StatusServiceUnavailable)
 		return
 	}
 
-	if deployment.InternalPort == 0 {
-		slog.Error("deployment has no internal port mapped", "deployment_id", deployment.ID)
+	if replica.InternalPort == 0 {
+		slog.Error("replica has no internal port mapped", "replica_id", replica.ID)
 		http.Error(w, "Bad Gateway (502)", http.StatusBadGateway)
 		return
 	}
 
-	targetStr := fmt.Sprintf("http://localhost:%d", deployment.InternalPort)
+	targetStr := fmt.Sprintf("http://localhost:%d", replica.InternalPort)
 	targetURL, err := url.Parse(targetStr)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
