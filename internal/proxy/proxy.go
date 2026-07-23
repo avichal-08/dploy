@@ -7,10 +7,32 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
 )
+
+var activeConnections sync.Map
+
+func getActiveConns(replicaID string) int32 {
+	if val, ok := activeConnections.Load(replicaID); ok {
+		return atomic.LoadInt32(val.(*int32))
+	}
+	return 0
+}
+
+func incConn(replicaID string) {
+	val, _ := activeConnections.LoadOrStore(replicaID, new(int32))
+	atomic.AddInt32(val.(*int32), 1)
+}
+
+func decConn(replicaID string) {
+	if val, ok := activeConnections.Load(replicaID); ok {
+		atomic.AddInt32(val.(*int32), -1)
+	}
+}
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -35,20 +57,40 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var replica models.Replica
-	if err := db.DB.Where("deployment_id = ? AND status = ?", *project.ActiveDeploymentID, "healthy").First(&replica).Error; err != nil {
+	var replicas []models.Replica
+	if err := db.DB.Where("deployment_id = ? AND status = ?", *project.ActiveDeploymentID, "healthy").Find(&replicas).Error; err != nil || len(replicas) == 0 {
 		slog.Warn("no healthy replicas available", "deployment_id", *project.ActiveDeploymentID)
 		http.Error(w, "Service Unavailable - No healthy instances (503)", http.StatusServiceUnavailable)
 		return
 	}
 
-	if replica.InternalPort == 0 {
-		slog.Error("replica has no internal port mapped", "replica_id", replica.ID)
+	var selectedReplica *models.Replica
+	var minConns int32 = -1
+
+	for i := range replicas {
+		rep := &replicas[i]
+		if rep.InternalPort == 0 {
+			continue
+		}
+
+		conns := getActiveConns(rep.ID)
+
+		if minConns == -1 || conns < minConns {
+			minConns = conns
+			selectedReplica = rep
+		}
+	}
+
+	if selectedReplica == nil {
+		slog.Error("all healthy replicas had invalid port mappings", "deployment_id", *project.ActiveDeploymentID)
 		http.Error(w, "Bad Gateway (502)", http.StatusBadGateway)
 		return
 	}
 
-	targetStr := fmt.Sprintf("http://localhost:%d", replica.InternalPort)
+	incConn(selectedReplica.ID)
+	defer decConn(selectedReplica.ID)
+
+	targetStr := fmt.Sprintf("http://localhost:%d", selectedReplica.InternalPort)
 	targetURL, err := url.Parse(targetStr)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
