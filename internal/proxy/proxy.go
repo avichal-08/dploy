@@ -34,6 +34,10 @@ func decConn(replicaID string) {
 	}
 }
 
+func GetReplicaConnectionCount(replicaID string) int32 {
+	return getActiveConns(replicaID)
+}
+
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	hostParts := strings.Split(r.Host, ".")
