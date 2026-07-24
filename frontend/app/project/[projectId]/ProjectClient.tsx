@@ -23,8 +23,10 @@ import {
    Plus,
    Eye,
    EyeOff,
-   Check,
+   BarChart3,
 } from "lucide-react";
+
+import { MetricsTab } from "@/components/MetricsTab";
 
 const API_BASE = "http://localhost:8080/api";
 
@@ -38,7 +40,7 @@ export default function ProjectOverviewClient({
    const [error, setError] = useState<string | null>(null);
 
    const [activeTab, setActiveTab] = useState<
-      "deployments" | "variables" | "settings"
+      "deployments" | "variables" | "settings" | "metrics"
    >("deployments");
 
    const [envs, setEnvs] = useState<any[]>([]);
@@ -387,6 +389,17 @@ export default function ProjectOverviewClient({
                      Deployments
                   </button>
                   <button
+                     onClick={() => setActiveTab("metrics")}
+                     className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
+                        activeTab === "metrics"
+                           ? "border-[#FAFAFA] text-[#FAFAFA]"
+                           : "border-transparent text-[#A1A1AA] hover:text-[#FAFAFA]"
+                     }`}
+                  >
+                     <BarChart3 className="w-4 h-4" />
+                     Metrics & Scaling
+                  </button>
+                  <button
                      onClick={() => setActiveTab("variables")}
                      className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
                         activeTab === "variables"
@@ -610,6 +623,8 @@ export default function ProjectOverviewClient({
                      </div>
                   </div>
                )}
+
+               {activeTab === "metrics" && <MetricsTab projectId={projectId} />}
 
                {activeTab === "variables" && (
                   <div className="space-y-6 animate-in fade-in duration-300">
