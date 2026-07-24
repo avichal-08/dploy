@@ -58,6 +58,8 @@ func main() {
 	mux.HandleFunc("PUT /api/envs/{envId}", api.HandleUpdateEnv)
 	mux.HandleFunc("DELETE /api/envs/{envId}", api.HandleDeleteEnv)
 
+	mux.HandleFunc("GET /api/projects/{id}/metrics", api.HandleGetProjectMetrics)
+
 	mux.HandleFunc("POST /api/deployments", api.HandleCreateDeployment(asynqClient))
 	mux.HandleFunc("GET /api/deployments/{id}", api.HandleGetDeployment)
 	mux.HandleFunc("POST /api/deployments/{id}/rollback", api.HandleRollback)
