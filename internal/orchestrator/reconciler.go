@@ -25,7 +25,7 @@ func Reconcile() {
 }
 
 func checkAndHealReplica(replica models.Replica) {
-	if replica.ContainerID == "" {
+	if replica.ContainerID == "" || strings.HasPrefix(replica.ContainerID, "pending-") {
 		return
 	}
 

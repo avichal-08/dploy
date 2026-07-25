@@ -8,7 +8,6 @@ import {
   ExternalLink,
   Loader2,
   ArrowRight,
-  Settings,
   AlertCircle,
   XCircle,
   Clock,

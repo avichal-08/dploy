@@ -42,8 +42,12 @@ func fileExists(path string) bool {
 }
 
 func DetectFramework(repoDir string) string {
+	isBun := fileExists(filepath.Join(repoDir, "bun.lock")) || fileExists(filepath.Join(repoDir, "bun.lockb"))
 
 	if fileExists(filepath.Join(repoDir, "next.config.js")) || fileExists(filepath.Join(repoDir, "next.config.mjs")) || fileExists(filepath.Join(repoDir, "next.config.ts")) {
+		if isBun {
+			return "nextjs-bun"
+		}
 		return "nextjs"
 	}
 
@@ -52,6 +56,9 @@ func DetectFramework(repoDir string) string {
 	}
 
 	if fileExists(filepath.Join(repoDir, "vite.config.js")) || fileExists(filepath.Join(repoDir, "vite.config.ts")) {
+		if isBun {
+			return "vite-bun"
+		}
 		return "vite"
 	}
 
@@ -59,7 +66,7 @@ func DetectFramework(repoDir string) string {
 		return "static-html"
 	}
 
-	if fileExists(filepath.Join(repoDir, "bun.lock")) || fileExists(filepath.Join(repoDir, "bun.lockb")) {
+	if isBun {
 		return "bun"
 	}
 

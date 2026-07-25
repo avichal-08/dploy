@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"fmt"
 	"log/slog"
 	"math"
 	"strconv"
@@ -65,6 +66,7 @@ func provisionReplica(deploymentID string, projectID string) {
 		ProjectID:    projectID,
 		DeploymentID: deploymentID,
 		Status:       "starting",
+		ContainerID:  fmt.Sprintf("pending-scale-%d", time.Now().UnixNano()),
 	}
 	db.DB.Create(&replica)
 

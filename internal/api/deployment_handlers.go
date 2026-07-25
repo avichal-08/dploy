@@ -143,6 +143,7 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		ProjectID:    project.ID,
 		DeploymentID: deployment.ID,
 		Status:       "starting",
+		ContainerID:  fmt.Sprintf("pending-rollback-%d", time.Now().UnixNano()),
 	}
 	db.DB.Create(&replica)
 

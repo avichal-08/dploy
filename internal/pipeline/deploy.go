@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -96,6 +97,7 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		ProjectID:    project.ID,
 		DeploymentID: deployment.ID,
 		Status:       "starting",
+		ContainerID:  fmt.Sprintf("pending-%d", time.Now().UnixNano()),
 	}
 	if err := db.DB.Create(&replica).Error; err != nil {
 		slog.Error("failed to create replica record", "error", err)

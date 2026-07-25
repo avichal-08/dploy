@@ -3,9 +3,11 @@ package pipeline
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"os/exec"
 	"strings"
 	"time"
@@ -58,11 +60,40 @@ func RunReplica(deploymentID string, replicaID string, envs *[]models.ProjectEnv
 
 	var runLogs bytes.Buffer
 
-	slog.Info("starting container with resource limits", "container", containerName)
+	internalPort := "8000"
+	inspectCmd := exec.Command("docker", "image", "inspect", imageName, "--format", "{{json .Config.ExposedPorts}}")
+	out, err := inspectCmd.Output()
+
+	if err == nil && len(bytes.TrimSpace(out)) > 0 && string(bytes.TrimSpace(out)) != "null" {
+		var exposed map[string]interface{}
+		if json.Unmarshal(out, &exposed) == nil && len(exposed) > 0 {
+			for k := range exposed {
+				parts := strings.Split(k, "/")
+				if len(parts) > 0 && parts[0] != "" {
+					internalPort = parts[0]
+					break
+				}
+			}
+		}
+	}
+
+	hostPort, err := getFreePort()
+	if err != nil {
+		slog.Error("failed to allocate free port", "error", err)
+		return "", "", runLogs.String(), fmt.Errorf("failed to allocate free port: %w", err)
+	}
+	extractedPort := fmt.Sprintf("%d", hostPort)
+
+	slog.Info("starting replica container", "container", containerName, "host_port", extractedPort, "internal_port", internalPort)
 	runCtx, cancelRun := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelRun()
 
-	runArgs := []string{"run", "-d", "-P", "--memory=512m", "--cpus=0.5", "--name", containerName}
+	runArgs := []string{
+		"run", "-d",
+		"-p", fmt.Sprintf("%s:%s", extractedPort, internalPort),
+		"-e", fmt.Sprintf("PORT=%s", internalPort),
+		"--memory=512m", "--cpus=0.5", "--name", containerName,
+	}
 
 	if envs != nil {
 		for _, env := range *envs {
@@ -83,24 +114,23 @@ func RunReplica(deploymentID string, replicaID string, envs *[]models.ProjectEnv
 
 	rawContainerID := strings.TrimSpace(runLogs.String())
 
-	portCmd := exec.Command("docker", "port", rawContainerID)
-	portOut, err := portCmd.Output()
-	if err != nil {
-		slog.Error("failed to extract mapped port", "container_id", rawContainerID, "error", err)
-		return rawContainerID, "", runLogs.String(), fmt.Errorf("port extraction failed: %v", err)
-	}
-
-	portLines := strings.Split(strings.TrimSpace(string(portOut)), "\n")
-	if len(portLines) == 0 || portLines[0] == "" {
-		return rawContainerID, "", runLogs.String(), fmt.Errorf("no ports exposed or mapped for container")
-	}
-
-	parts := strings.Split(portLines[0], ":")
-	extractedPort := parts[len(parts)-1]
-
 	slog.Info("container started successfully", "container_id", rawContainerID, "host_port", extractedPort)
 
 	return rawContainerID, extractedPort, runLogs.String(), nil
+}
+
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func StopAndRemoveContainer(containerID string) error {
