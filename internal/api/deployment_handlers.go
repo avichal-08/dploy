@@ -12,6 +12,7 @@ import (
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
 	"github.com/avichal-08/dploy/internal/pipeline"
+	"github.com/avichal-08/dploy/internal/proxy"
 	"github.com/avichal-08/dploy/internal/tasks"
 	"github.com/hibiken/asynq"
 )
@@ -169,6 +170,8 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		"active_deployment_id": deployment.ID,
 		"status":               "deployed",
 	})
+
+	proxy.ClearProjectCache(project.Name)
 
 	db.DB.Model(&replica).Updates(map[string]interface{}{
 		"container_id":  containerID,

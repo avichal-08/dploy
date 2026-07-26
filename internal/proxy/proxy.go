@@ -10,7 +10,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
 )
 
@@ -48,23 +47,10 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	projectName := hostParts[0]
 
-	var project models.Project
-	if err := db.DB.Where("name = ?", projectName).First(&project).Error; err != nil {
-		slog.Warn("project not found in proxy", "host", r.Host, "project_name", projectName)
-		http.Error(w, "Project not found (404)", http.StatusNotFound)
-		return
-	}
-
-	if project.ActiveDeploymentID == nil || *project.ActiveDeploymentID == "" {
-		slog.Warn("project has no active deployment", "project_name", projectName)
-		http.Error(w, "No active deployment found (503)", http.StatusServiceUnavailable)
-		return
-	}
-
-	var replicas []models.Replica
-	if err := db.DB.Where("deployment_id = ? AND status = ?", *project.ActiveDeploymentID, "healthy").Find(&replicas).Error; err != nil || len(replicas) == 0 {
-		slog.Warn("no healthy replicas available", "deployment_id", *project.ActiveDeploymentID)
-		http.Error(w, "Service Unavailable - No healthy instances (503)", http.StatusServiceUnavailable)
+	_, replicas, err := CacheManager.GetRoute(projectName)
+	if err != nil {
+		slog.Warn("proxy routing failed", "project", projectName, "error", err)
+		http.Error(w, "Service Unavailable (503)", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -86,7 +72,6 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if selectedReplica == nil {
-		slog.Error("all healthy replicas had invalid port mappings", "deployment_id", *project.ActiveDeploymentID)
 		http.Error(w, "Bad Gateway (502)", http.StatusBadGateway)
 		return
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/helper"
 	"github.com/avichal-08/dploy/internal/models"
+	"github.com/avichal-08/dploy/internal/proxy"
 )
 
 func RunDeployment(project models.Project, deployment models.Deployment, logWriter io.Writer) {
@@ -133,6 +134,8 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"status":               "deployed",
 		"active_deployment_id": deployment.ID,
 	})
+
+	proxy.ClearProjectCache(project.Name)
 
 	db.DB.Model(&models.Deployment{ID: deployment.ID}).Updates(map[string]interface{}{
 		"status":        "success",

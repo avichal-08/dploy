@@ -132,18 +132,23 @@ export function MetricsTab({ projectId }: { projectId: string }) {
             {history.map((tick, i) => {
                const maxConnsInHistory = Math.max(...history.map(h => h.conns), 10);
                const heightPercent = Math.max(2, (tick.conns / maxConnsInHistory) * 100);
+               const isHighLoad = tick.conns > (metrics.replicas * metrics.target_concurrency * 0.8);
+               const barColor = isHighLoad ? "bg-amber-500" : "bg-blue-500";
                return (
-                 <div key={i} className="flex flex-col items-center flex-1 group">
-                    <div className="w-full bg-[#27272A] rounded-t-sm relative transition-all duration-500 ease-out group-hover:bg-amber-400" style={{ height: `${heightPercent}%` }}>
-                       <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#FAFAFA] text-[#09090B] text-[10px] font-bold py-1 px-2 rounded pointer-events-none transition-opacity">
-                         {tick.conns}
-                       </div>
-                    </div>
-                    <span className="text-[9px] text-[#52525B] mt-2 truncate w-full text-center">
-                       {i % 4 === 0 ? tick.time : ''}
-                    </span>
-                 </div>
-               )
+                                <div key={i} className="flex flex-col items-center flex-1 group">
+                                   <div
+                                       className={`w-full ${barColor} rounded-t-sm relative transition-all duration-500 ease-out opacity-80 group-hover:opacity-100`}
+                                       style={{ height: `${heightPercent}%` }}
+                                   >
+                                      <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#FAFAFA] text-[#09090B] text-[10px] font-bold py-1 px-2 rounded pointer-events-none transition-opacity z-10">
+                                        {tick.conns}
+                                      </div>
+                                   </div>
+                                   <span className="text-[9px] text-[#52525B] mt-2 truncate w-full text-center">
+                                      {i % 4 === 0 ? tick.time : ''}
+                                   </span>
+                                </div>
+                              )
             })}
           </div>
         </div>
