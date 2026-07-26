@@ -1,4 +1,3 @@
-// ... existing code ...
 package proxy
 
 import (
@@ -73,8 +72,4 @@ func (rc *RouteCacheManager) WarmCache(projectName string, deploymentID string, 
 		ExpiresAt:    time.Now().Add(rc.ttl),
 	})
 	slog.Info("warmed proxy route cache", "project", projectName, "replicas", len(replicas))
-}
-
-func ClearProjectCache(projectName string) {
-	CacheManager.Invalidate(projectName)
 }
