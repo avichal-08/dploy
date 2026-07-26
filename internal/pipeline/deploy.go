@@ -60,7 +60,14 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"commit_message": strings.TrimSpace(commitMessage),
 	})
 
-	if err := GenerateDockerfile(buildDir, project.Framework, project.BuildCommand, project.RunCommand); err != nil {
+	envs, err := helper.GetProjectEnvs(deployment.ID)
+	if err != nil {
+		slog.Error("failed to fetch project envs", "error", err)
+		failDeployment(deployment.ID, project.ID, "Failed to fetch project envs: "+err.Error())
+		return
+	}
+
+	if err := GenerateDockerfile(buildDir, project.Framework, project.BuildCommand, project.RunCommand, &envs); err != nil {
 		slog.Error("failed to generate dockerfile", "error", err)
 		failDeployment(deployment.ID, project.ID, "Dockerfile generation failed: "+err.Error())
 		return
@@ -70,13 +77,6 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 
 	framework := strings.ToLower(project.Framework)
 	isEnvRequired := framework == "vite" || framework == "nextjs" || framework == "static-html"
-
-	envs, err := helper.GetProjectEnvs(deployment.ID)
-	if err != nil {
-		slog.Error("failed to fetch project envs", "error", err)
-		failDeployment(deployment.ID, project.ID, "Failed to fetch project envs: "+err.Error())
-		return
-	}
 
 	buildLogs, buildErr := BuildImage(buildDir, deployment.ID, isEnvRequired, &envs, logWriter)
 	if buildErr != nil {
