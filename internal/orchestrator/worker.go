@@ -4,12 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"time"
-
 )
 
 func StartOrchestrator(ctx context.Context) {
 	slog.Info("starting orchestrator reconciliation loop")
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 	go func() {
 		for {
 			select {
