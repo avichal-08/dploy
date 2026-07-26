@@ -135,7 +135,7 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"active_deployment_id": deployment.ID,
 	})
 
-	proxy.ClearProjectCache(project.Name)
+	proxy.CacheManager.Invalidate(project.Name)
 
 	db.DB.Model(&models.Deployment{ID: deployment.ID}).Updates(map[string]interface{}{
 		"status":        "success",
@@ -144,6 +144,8 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"build_logs":    finalLogs,
 		"finished_at":   time.Now(),
 	})
+
+	proxy.CacheManager.WarmCache(project.Name, deployment.ID, []models.Replica{replica})
 
 	slog.Info("traffic safely routed to new deployment", "deployment_id", deployment.ID, "internal_port", internalPort)
 

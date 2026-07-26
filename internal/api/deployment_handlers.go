@@ -171,7 +171,7 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		"status":               "deployed",
 	})
 
-	proxy.ClearProjectCache(project.Name)
+	proxy.CacheManager.Invalidate(project.Name)
 
 	db.DB.Model(&replica).Updates(map[string]interface{}{
 		"container_id":  containerID,
@@ -183,6 +183,8 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		"container_id":  containerID,
 		"internal_port": internalPort,
 	})
+
+	proxy.CacheManager.WarmCache(project.Name, deployment.ID, []models.Replica{replica})
 
 	slog.Info("traffic successfully routed to rollback deployment", "deployment_id", deployment.ID)
 
