@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN last_scaled_at TIMESTAMP WITH TIME ZONE;

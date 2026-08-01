@@ -46,8 +46,8 @@ func Init(dsn string) {
 		os.Exit(1)
 	}
 
-	sqlDB.SetMaxOpenConns(20)
-	sqlDB.SetMaxIdleConns(5)
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 
 	runMigrations(dsn)

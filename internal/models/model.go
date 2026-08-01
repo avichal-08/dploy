@@ -15,18 +15,19 @@ type User struct {
 }
 
 type Project struct {
-	ID                 string    `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	UserID             string    `gorm:"type:uuid;not null;uniqueIndex:idx_user_project"`
-	Name               string    `gorm:"type:varchar(255);not null;uniqueIndex:idx_user_project"`
-	RepositoryURL      string    `gorm:"type:text;not null"`
-	Framework          string    `gorm:"type:varchar(50)"`
-	BuildCommand       string    `gorm:"type:varchar(255)"`
-	RunCommand         string    `gorm:"type:varchar(255)"`
-	Status             string    `gorm:"type:varchar(50);default:'cloning'"`
-	ProductionURL      string    `gorm:"type:text"`
-	TargetConcurrency  *int      `gorm:"type:integer"`
-	CreatedAt          time.Time `gorm:"autoCreateTime"`
-	ActiveDeploymentID *string   `gorm:"type:uuid"`
+	ID                 string     `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID             string     `gorm:"type:uuid;not null;uniqueIndex:idx_user_project"`
+	Name               string     `gorm:"type:varchar(255);not null;uniqueIndex:idx_user_project"`
+	RepositoryURL      string     `gorm:"type:text;not null"`
+	Framework          string     `gorm:"type:varchar(50)"`
+	BuildCommand       string     `gorm:"type:varchar(255)"`
+	RunCommand         string     `gorm:"type:varchar(255)"`
+	Status             string     `gorm:"type:varchar(50);default:'cloning'"`
+	ProductionURL      string     `gorm:"type:text"`
+	TargetConcurrency  *int       `gorm:"type:integer"`
+	CreatedAt          time.Time  `gorm:"autoCreateTime"`
+	ActiveDeploymentID *string    `gorm:"type:uuid"`
+	LastScaledAt       *time.Time `gorm:"type:time"`
 
 	Envs        []ProjectEnv `gorm:"constraint:OnDelete:CASCADE;"`
 	Deployments []Deployment `gorm:"constraint:OnDelete:CASCADE;"`
