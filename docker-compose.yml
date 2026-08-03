@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+   dploy-db:
+      image: postgres:15-alpine
+      container_name: dploy-db
+      environment:
+         - POSTGRES_USER=dploy_user
+         - POSTGRES_PASSWORD=dploy_pass
+         - POSTGRES_DB=dploy_db
+      ports:
+         - "5432:5432"
+      volumes:
+         - dploy_pg_data:/var/lib/postgresql/data
+      healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U dploy_user -d dploy_db"]
+         interval: 5s
+         timeout: 5s
+         retries: 5
+      restart: unless-stopped
+
+   redis:
+      image: redis:7-alpine
+      container_name: dploy-redis
+      ports:
+         - "6379:6379"
+      volumes:
+         - dploy_redis_data:/data
+      restart: unless-stopped
+
+   dploy-api:
+      build:
+         context: .
+         dockerfile: Dockerfile
+      container_name: dploy-api
+      command: ["./dploy-api"]
+      ports:
+         - "8080:8080"
+      environment:
+         - DATABASE_URL=postgresql://dploy_user:dploy_pass@dploy-db:5432/dploy_db?sslmode=disable
+         - REDIS_ADDR=redis:6379
+         - PORT=8080
+      volumes:
+         - /var/run/docker.sock:/var/run/docker.sock
+         - ./dploy-clones:/app/dploy-clones
+      depends_on:
+         dploy-db:
+            condition: service_healthy
+         redis:
+            condition: service_started
+      restart: unless-stopped
+
+   dploy-worker:
+      build:
+         context: .
+         dockerfile: Dockerfile
+      container_name: dploy-worker
+      command: ["./dploy-worker"]
+      environment:
+         - DATABASE_URL=postgresql://dploy_user:dploy_pass@dploy-db:5432/dploy_db?sslmode=disable
+         - REDIS_ADDR=redis:6379
+      volumes:
+         - /var/run/docker.sock:/var/run/docker.sock
+         - ./dploy-clones:/app/dploy-clones
+      depends_on:
+         dploy-db:
+            condition: service_healthy
+         redis:
+            condition: service_started
+      restart: unless-stopped
+
+volumes:
+   dploy_pg_data:
+   dploy_redis_data:

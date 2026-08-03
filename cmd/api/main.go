@@ -37,11 +37,16 @@ func main() {
 
 	db.Init(dsn)
 
-	redisOpt := asynq.RedisClientOpt{Addr: "localhost:6379"}
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
+	redisOpt := asynq.RedisClientOpt{Addr: redisAddr}
 	asynqClient := asynq.NewClient(redisOpt)
 	defer asynqClient.Close()
 
-	redisClient := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	redisClient := redis.NewClient(&redis.Options{Addr: redisAddr})
 
 	mux := http.NewServeMux()
 

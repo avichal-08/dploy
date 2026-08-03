@@ -21,7 +21,12 @@ func main() {
 	godotenv.Load()
 	db.Init(os.Getenv("DATABASE_URL"))
 
-	redisOpt := asynq.RedisClientOpt{Addr: "localhost:6379"}
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
+	redisOpt := asynq.RedisClientOpt{Addr: redisAddr}
 
 	srv := asynq.NewServer(
 		redisOpt,
