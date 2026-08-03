@@ -1,6 +1,6 @@
 services:
    dploy-db:
-      image: postgres:15-alpine
+      image: postgres:alpine
       container_name: dploy-db
       environment:
          - POSTGRES_USER=dploy_user
@@ -9,7 +9,7 @@ services:
       ports:
          - "5432:5432"
       volumes:
-         - dploy_pg_data:/var/lib/postgresql/data
+         - dploy_pg_data:/var/lib/postgresql
       healthcheck:
          test: ["CMD-SHELL", "pg_isready -U dploy_user -d dploy_db"]
          interval: 5s
@@ -18,7 +18,7 @@ services:
       restart: unless-stopped
 
    redis:
-      image: redis:7-alpine
+      image: redis:alpine
       container_name: dploy-redis
       ports:
          - "6379:6379"
