@@ -30,6 +30,7 @@ services:
       build:
          context: .
          dockerfile: Dockerfile
+         target: api_runner
       container_name: dploy-api
       command: ["./dploy-api"]
       ports:
@@ -52,6 +53,7 @@ services:
       build:
          context: .
          dockerfile: Dockerfile
+         target: worker_runner
       container_name: dploy-worker
       command: ["./dploy-worker"]
       environment:
