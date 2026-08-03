@@ -67,6 +67,19 @@ services:
             condition: service_started
       restart: unless-stopped
 
+   dploy-web:
+      build:
+         context: ./frontend
+         dockerfile: Dockerfile
+      container_name: dploy-web
+      ports:
+         - "3000:3000"
+      environment:
+         - NEXT_PUBLIC_API_URL=http://localhost:8080
+      depends_on:
+         - dploy-api
+      restart: unless-stopped
+
 volumes:
    dploy_pg_data:
    dploy_redis_data:
