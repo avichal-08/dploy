@@ -365,12 +365,10 @@ export default function ProjectDeploymentClient({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {BUILD_PHASES.map((phase, idx) => {
                 const isActive = idx === activePhaseIndex && step === 3;
-                const isPast = activePhaseIndex > idx || step === 4;
                 const isErrorPhase = idx === activePhaseIndex && step === 5;
 
                 let stateClass = "bg-[#0A0A0A] border-[#27272A] opacity-50";
                 if (isActive) stateClass = "bg-[#111113] border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.1)]";
-                if (isPast) stateClass = "bg-[#0A0A0A] border-green-500/30";
                 if (isErrorPhase) stateClass = "bg-[#111113] border-red-500/50";
 
                 return (
@@ -380,8 +378,6 @@ export default function ProjectDeploymentClient({
                   >
                     {isActive ? (
                       <Loader2 className="w-4 h-4 animate-spin text-blue-400 shrink-0" />
-                    ) : isPast ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
                     ) : isErrorPhase ? (
                       <XCircle className="w-4 h-4 text-red-500 shrink-0" />
                     ) : (
@@ -389,7 +385,7 @@ export default function ProjectDeploymentClient({
                     )}
                     <span
                       className={`text-xs font-semibold whitespace-nowrap ${
-                        isActive || isPast || isErrorPhase
+                        isActive || isErrorPhase
                           ? "text-[#FAFAFA]"
                           : "text-[#52525B]"
                       }`}
