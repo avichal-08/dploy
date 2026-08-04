@@ -28,7 +28,7 @@ import {
 
 import { MetricsTab } from "@/components/MetricsTab";
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export default function ProjectOverviewClient({
    projectId,
@@ -59,7 +59,9 @@ export default function ProjectOverviewClient({
    const fetchProject = async () => {
       if (!projectId) return;
       try {
-         const res = await fetch(`${API_BASE}/project/${projectId}`);
+         const res = await fetch(`${API_BASE}/project/${projectId}`, {
+            credentials: "include",
+         });
          if (!res.ok) throw new Error("Project not found or failed to load");
          const data = await res.json();
          setProject(data);
@@ -73,7 +75,9 @@ export default function ProjectOverviewClient({
    const fetchEnvs = async () => {
       if (!projectId) return;
       try {
-         const res = await fetch(`${API_BASE}/projects/${projectId}/envs`);
+         const res = await fetch(`${API_BASE}/projects/${projectId}/envs`, {
+            credentials: "include",
+         });
          if (res.ok) {
             const data = await res.json();
             setEnvs(data || []);
@@ -99,6 +103,7 @@ export default function ProjectOverviewClient({
             `${API_BASE}/deployments/${deploymentId}/rollback`,
             {
                method: "POST",
+               credentials: "include",
             },
          );
 
@@ -128,6 +133,7 @@ export default function ProjectOverviewClient({
             body: JSON.stringify([
                { key: formattedKey, value: newValue.trim() },
             ]),
+            credentials: "include",
          });
 
          if (!res.ok) {
@@ -157,6 +163,7 @@ export default function ProjectOverviewClient({
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ key, value }),
+            credentials: "include",
          });
 
          if (!res.ok) throw new Error("Failed to update environment variable");
@@ -170,6 +177,7 @@ export default function ProjectOverviewClient({
       try {
          const res = await fetch(`${API_BASE}/envs/${envId}`, {
             method: "DELETE",
+            credentials: "include",
          });
 
          if (!res.ok) throw new Error("Failed to delete environment variable");
@@ -188,6 +196,7 @@ export default function ProjectOverviewClient({
       try {
          const res = await fetch(`${API_BASE}/project/${projectId}`, {
             method: "DELETE",
+            credentials: "include",
          });
 
          if (!res.ok) throw new Error("Failed to delete project");

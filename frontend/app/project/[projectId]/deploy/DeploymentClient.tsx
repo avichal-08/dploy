@@ -15,8 +15,8 @@ import {
   RotateCcw
 } from "lucide-react";
 
-const API_BASE = "http://localhost:8080/api";
-const WS_BASE = "ws://localhost:8080/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/api";
 
 const BUILD_PHASES = [
   { id: "cloning", label: "Cloning Repo" },
@@ -51,7 +51,9 @@ export default function ProjectDeploymentClient({
 
     const pollProject = async () => {
       try {
-        const res = await fetch(`${API_BASE}/project/${projectId}`);
+        const res = await fetch(`${API_BASE}/project/${projectId}`, {
+          credentials: "include",
+        });
         if (!res.ok) throw new Error("Failed to fetch project");
 
         const data = await res.json();
@@ -95,7 +97,7 @@ export default function ProjectDeploymentClient({
 
     if (step === 3 && targetDeploymentId) {
       ws = new WebSocket(
-        `${WS_BASE}/deployments/${targetDeploymentId}/logs`,
+        `${WS_BASE}/deployments/${targetDeploymentId}/logs`
       );
 
       ws.onmessage = (event) => {
@@ -170,6 +172,7 @@ export default function ProjectDeploymentClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        credentials: "include",
       });
 
       const text = await res.text();

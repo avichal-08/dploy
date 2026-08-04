@@ -9,7 +9,6 @@ import (
 )
 
 type CreateProjectPayload struct {
-	UserId        string `json:"user_id"`
 	Name          string `json:"name"`
 	RepositoryURL string `json:"repository_url"`
 }
@@ -22,8 +21,10 @@ func HandleCreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userId := GetUserID(r)
+
 	project := models.Project{
-		UserID:        payload.UserId,
+		UserID:        userId,
 		Name:          payload.Name,
 		RepositoryURL: payload.RepositoryURL,
 		Status:        "cloning",
@@ -40,7 +41,7 @@ func HandleCreateProject(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGetProjects(w http.ResponseWriter, r *http.Request) {
-	userId := r.PathValue("user_id")
+	userId := GetUserID(r)
 	if userId == "" {
 		WriteError(w, http.StatusBadRequest, "User ID is required")
 		return

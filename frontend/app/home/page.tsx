@@ -14,8 +14,7 @@ import {
   TerminalSquare,
 } from "lucide-react";
 
-const API_BASE = "http://localhost:8080/api";
-const USER_ID = "44232737-74be-4fd0-8b5c-ddb1cd467a53";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 const SIDEBAR_NAV = [
   { label: "Projects", icon: Box, active: true, href: "/" },
@@ -32,13 +31,17 @@ export default function HomePage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const projRes = await fetch(`${API_BASE}/projects/${USER_ID}`);
+        const projRes = await fetch(`${API_BASE}/projects`, {
+          credentials: "include",
+        });
         if (projRes.ok) {
           const data = await projRes.json();
           setProjects(data || []);
         }
 
-        const userRes = await fetch(`${API_BASE}/users/${USER_ID}`);
+        const userRes = await fetch(`${API_BASE}/users`, {
+          credentials: "include",
+        });
         if (userRes.ok) {
           const userData = await userRes.json();
           setUser(userData);

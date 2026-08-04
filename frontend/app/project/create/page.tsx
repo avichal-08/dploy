@@ -10,8 +10,7 @@ import {
    TerminalSquare,
 } from "lucide-react";
 
-const API_BASE = "http://localhost:8080/api";
-const user_id = "44232737-74be-4fd0-8b5c-ddb1cd467a53"; // just for testing
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export default function CreateProjectPage() {
    const router = {
@@ -72,10 +71,10 @@ export default function CreateProjectPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-               user_id,
                name: projectName,
                repository_url: repoUrl,
             }),
+            credentials: "include",
          });
 
          const text = await res.text();
@@ -113,6 +112,7 @@ export default function CreateProjectPage() {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(validEnvs),
+                  credentials: "include",
                },
             );
 

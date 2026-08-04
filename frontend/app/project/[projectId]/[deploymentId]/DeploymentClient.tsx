@@ -18,7 +18,7 @@ import {
 
 import { RuntimeLogsTerminal } from "@/components/RuntimeLogsTerminal";
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export default function DeploymentDetailsClient({
    projectId,
@@ -38,7 +38,9 @@ export default function DeploymentDetailsClient({
 
       const fetchDeployment = async () => {
          try {
-            const res = await fetch(`${API_BASE}/deployments/${deploymentId}`);
+            const res = await fetch(`${API_BASE}/deployments/${deploymentId}`, {
+               credentials: "include",
+            });
             if (!res.ok)
                throw new Error("Deployment not found or failed to load");
 

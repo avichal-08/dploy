@@ -50,29 +50,33 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /api/users/{user_id}", api.HandleGetUser)
+	mux.HandleFunc("POST /api/auth/register", api.HandleRegister)
+	mux.HandleFunc("POST /api/auth/login", api.HandleLogin)
+	mux.HandleFunc("POST /api/auth/logout", api.HandleLogout)
 
-	mux.HandleFunc("POST /api/projects", api.HandleCreateProject)
-	mux.HandleFunc("GET /api/projects/{user_id}", api.HandleGetProjects)
-	mux.HandleFunc("GET /api/project/{id}", api.HandleGetProject)
-	mux.HandleFunc("DELETE /api/project/{id}", api.HandleDeleteProject)
+	mux.HandleFunc("GET /api/users", api.AuthMiddleware(api.HandleGetUser))
 
-	mux.HandleFunc("GET /api/projects/{id}/envs", api.HandleGetEnvs)
-	mux.HandleFunc("POST /api/projects/{id}/envs", api.HandleCreateEnvs)
+	mux.HandleFunc("POST /api/projects", api.AuthMiddleware(api.HandleCreateProject))
+	mux.HandleFunc("GET /api/projects", api.AuthMiddleware(api.HandleGetProjects))
+	mux.HandleFunc("GET /api/project/{id}", api.AuthMiddleware(api.HandleGetProject))
+	mux.HandleFunc("DELETE /api/project/{id}", api.AuthMiddleware(api.HandleDeleteProject))
 
-	mux.HandleFunc("PUT /api/envs/{envId}", api.HandleUpdateEnv)
-	mux.HandleFunc("DELETE /api/envs/{envId}", api.HandleDeleteEnv)
+	mux.HandleFunc("GET /api/projects/{id}/envs", api.AuthMiddleware(api.HandleGetEnvs))
+	mux.HandleFunc("POST /api/projects/{id}/envs", api.AuthMiddleware(api.HandleCreateEnvs))
 
-	mux.HandleFunc("GET /api/projects/{id}/metrics", api.HandleGetProjectMetrics)
+	mux.HandleFunc("PUT /api/envs/{envId}", api.AuthMiddleware(api.HandleUpdateEnv))
+	mux.HandleFunc("DELETE /api/envs/{envId}", api.AuthMiddleware(api.HandleDeleteEnv))
 
-	mux.HandleFunc("POST /api/deployments", api.HandleCreateDeployment(asynqClient))
-	mux.HandleFunc("GET /api/deployments/{id}", api.HandleGetDeployment)
-	mux.HandleFunc("POST /api/deployments/{id}/rollback", api.HandleRollback)
+	mux.HandleFunc("GET /api/projects/{id}/metrics", api.AuthMiddleware(api.HandleGetProjectMetrics))
+
+	mux.HandleFunc("POST /api/deployments", api.AuthMiddleware(api.HandleCreateDeployment(asynqClient)))
+	mux.HandleFunc("GET /api/deployments/{id}", api.AuthMiddleware(api.HandleGetDeployment))
+	mux.HandleFunc("POST /api/deployments/{id}/rollback", api.AuthMiddleware(api.HandleRollback))
 
 	subscriber := &pubsub.RedisSubscriber{Client: redisClient}
 
-	mux.HandleFunc("GET /api/deployments/{id}/logs", api.HandleLogStream(subscriber))
-	mux.HandleFunc("GET /api/deployments/{id}/logs/runtime", api.HandleGetRuntimeLogs)
+	mux.HandleFunc("GET /api/deployments/{id}/logs", api.AuthMiddleware(api.HandleLogStream(subscriber)))
+	mux.HandleFunc("GET /api/deployments/{id}/logs/runtime", api.AuthMiddleware(api.HandleGetRuntimeLogs))
 
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusOK, map[string]string{"status": "operational"})
@@ -121,6 +125,7 @@ func main() {
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
 

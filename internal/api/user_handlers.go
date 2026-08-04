@@ -8,7 +8,7 @@ import (
 )
 
 func HandleGetUser(w http.ResponseWriter, r *http.Request) {
-	userId := r.PathValue("user_id")
+	userId := GetUserID(r)
 	if userId == "" {
 		WriteError(w, http.StatusBadRequest, "User ID is required")
 		return

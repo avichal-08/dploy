@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TerminalSquare, ArrowRight, Terminal, Zap } from "lucide-react";
 
 export default function Home() {
@@ -14,20 +15,20 @@ export default function Home() {
                </div>
 
                <div className="flex items-center gap-6">
-                  <a
+                  <Link
                      href="https://github.com"
                      target="_blank"
                      rel="noreferrer"
                      className="text-sm font-medium text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
                   >
                      GitHub
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                      href="/project"
                      className="text-sm font-medium bg-[#FAFAFA] text-[#09090B] px-3.5 py-1.5 rounded-md hover:bg-[#E4E4E7] transition-colors"
                   >
                      Dashboard
-                  </a>
+                  </Link>
                </div>
             </div>
          </nav>
