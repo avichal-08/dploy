@@ -11,9 +11,11 @@ import (
 )
 
 type RouteCache struct {
-	DeploymentID string
-	Replicas     []models.Replica
-	ExpiresAt    time.Time
+	DeploymentID  string
+	ProjectType   string
+	StoragePrefix string
+	Replicas      []models.Replica
+	ExpiresAt     time.Time
 }
 
 type RouteCacheManager struct {
@@ -29,35 +31,49 @@ func NewRouteCacheManager(ttl time.Duration) *RouteCacheManager {
 
 var CacheManager = NewRouteCacheManager(30 * time.Second)
 
-func (rc *RouteCacheManager) GetRoute(projectName string) (string, []models.Replica, error) {
+func (rc *RouteCacheManager) GetRoute(projectName string) (RouteCache, error) {
 	if val, ok := rc.store.Load(projectName); ok {
 		entry := val.(RouteCache)
 		if time.Now().Before(entry.ExpiresAt) {
-			return entry.DeploymentID, entry.Replicas, nil
+			return entry, nil
 		}
 	}
 
 	var project models.Project
 	if err := db.DB.Where("name = ?", projectName).First(&project).Error; err != nil {
-		return "", nil, fmt.Errorf("project not found")
+		return RouteCache{}, fmt.Errorf("project not found")
 	}
 
 	if project.ActiveDeploymentID == nil || *project.ActiveDeploymentID == "" {
-		return "", nil, fmt.Errorf("no active deployment")
+		return RouteCache{}, fmt.Errorf("no active deployment")
+	}
+
+	var deployment models.Deployment
+	if err := db.DB.Where("id = ?", *project.ActiveDeploymentID).First(&deployment).Error; err != nil {
+		return RouteCache{}, fmt.Errorf("active deployment not found")
 	}
 
 	var replicas []models.Replica
-	if err := db.DB.Where("deployment_id = ? AND status = ?", *project.ActiveDeploymentID, "healthy").Find(&replicas).Error; err != nil || len(replicas) == 0 {
-		return "", nil, fmt.Errorf("no healthy replicas")
+
+	if project.ProjectType == "static" {
+		replicas = []models.Replica{}
+	} else {
+		if err := db.DB.Where("deployment_id = ? AND status = ?", *project.ActiveDeploymentID, "healthy").Find(&replicas).Error; err != nil || len(replicas) == 0 {
+			return RouteCache{}, fmt.Errorf("no healthy replicas")
+		}
 	}
 
-	rc.store.Store(projectName, RouteCache{
-		DeploymentID: *project.ActiveDeploymentID,
-		Replicas:     replicas,
-		ExpiresAt:    time.Now().Add(rc.ttl),
-	})
+	cacheEntry := RouteCache{
+		DeploymentID:  *project.ActiveDeploymentID,
+		ProjectType:   project.ProjectType,
+		StoragePrefix: deployment.StoragePrefix,
+		Replicas:      replicas,
+		ExpiresAt:     time.Now().Add(rc.ttl),
+	}
 
-	return *project.ActiveDeploymentID, replicas, nil
+	rc.store.Store(projectName, cacheEntry)
+
+	return cacheEntry, nil
 }
 
 func (rc *RouteCacheManager) Invalidate(projectName string) {
@@ -65,11 +81,14 @@ func (rc *RouteCacheManager) Invalidate(projectName string) {
 	slog.Info("invalidated proxy route cache", "project", projectName)
 }
 
-func (rc *RouteCacheManager) WarmCache(projectName string, deploymentID string, replicas []models.Replica) {
-	rc.store.Store(projectName, RouteCache{
-		DeploymentID: deploymentID,
-		Replicas:     replicas,
-		ExpiresAt:    time.Now().Add(rc.ttl),
-	})
-	slog.Info("warmed proxy route cache", "project", projectName, "replicas", len(replicas))
+func (rc *RouteCacheManager) WarmCache(projectName string, deploymentID string, projectType string, storagePrefix string, replicas []models.Replica) {
+	cacheEntry := RouteCache{
+		DeploymentID:  deploymentID,
+		ProjectType:   projectType,
+		StoragePrefix: storagePrefix,
+		Replicas:      replicas,
+		ExpiresAt:     time.Now().Add(rc.ttl),
+	}
+	rc.store.Store(projectName, cacheEntry)
+	slog.Info("warmed proxy route cache", "project", projectName, "type", projectType)
 }

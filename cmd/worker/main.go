@@ -12,6 +12,7 @@ import (
 	"github.com/avichal-08/dploy/internal/pipeline"
 	"github.com/avichal-08/dploy/internal/tasks"
 	"github.com/avichal-08/dploy/internal/worker"
+	"github.com/avichal-08/dploy/internal/helper"
 	"github.com/hibiken/asynq"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
@@ -25,6 +26,13 @@ func main() {
 	if redisAddr == "" {
 		redisAddr = "localhost:6379"
 	}
+	s3Client, err := helper.NewS3Client("http://minio:9000", os.Getenv("S3_ACCESS_KEY"), os.Getenv("S3_SECRET_KEY"))
+	if err != nil {
+		slog.Error("Failed to initialize S3 client", "error", err)
+	} else {
+		pipeline.InitS3Client(s3Client)
+	}
+
 
 	redisOpt := asynq.RedisClientOpt{Addr: redisAddr}
 

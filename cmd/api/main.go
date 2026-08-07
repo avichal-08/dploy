@@ -12,6 +12,7 @@ import (
 
 	"github.com/avichal-08/dploy/internal/api"
 	"github.com/avichal-08/dploy/internal/db"
+	"github.com/avichal-08/dploy/internal/helper"
 	"github.com/avichal-08/dploy/internal/orchestrator"
 	"github.com/avichal-08/dploy/internal/proxy"
 	"github.com/avichal-08/dploy/internal/pubsub"
@@ -36,10 +37,16 @@ func main() {
 	}
 
 	db.Init(dsn)
+	s3Client, err := helper.NewS3Client("http://minio:9000", os.Getenv("S3_ACCESS_KEY"), os.Getenv("S3_SECRET_KEY"))
+	if err != nil {
+		slog.Error("Failed to initialize S3 client", "error", err)
+	} else {
+		proxy.InitS3Client(s3Client)
+	}
 
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
-		redisAddr = "localhost:6379"
+		redisAddr = "redis:6379"
 	}
 
 	redisOpt := asynq.RedisClientOpt{Addr: redisAddr}

@@ -68,6 +68,15 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		return
 	}
 
+	if project.ProjectType == "static" {
+		if err := RunStaticDeployment(project, deployment.ID, buildDir, &envs, logWriter); err != nil {
+			slog.Error("failed to generate static site", "error", err)
+			failDeployment(deployment.ID, project.ID, "Static site generation failed: "+err.Error())
+			return
+		}
+		return
+	}
+
 	if err := GenerateDockerfile(buildDir, project.Framework, project.BuildCommand, project.RunCommand, &envs); err != nil {
 		slog.Error("failed to generate dockerfile", "error", err)
 		failDeployment(deployment.ID, project.ID, "Dockerfile generation failed: "+err.Error())
@@ -145,7 +154,7 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"finished_at":   time.Now(),
 	})
 
-	proxy.CacheManager.WarmCache(project.Name, deployment.ID, []models.Replica{replica})
+	proxy.CacheManager.WarmCache(project.Name, deployment.ID, "docker", "", []models.Replica{replica})
 
 	slog.Info("traffic safely routed to new deployment", "deployment_id", deployment.ID, "internal_port", internalPort)
 

@@ -47,18 +47,23 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	projectName := hostParts[0]
 
-	_, replicas, err := CacheManager.GetRoute(projectName)
+	route, err := CacheManager.GetRoute(projectName)
 	if err != nil {
 		slog.Warn("proxy routing failed", "project", projectName, "error", err)
 		http.Error(w, "Service Unavailable (503)", http.StatusServiceUnavailable)
 		return
 	}
 
+	if route.ProjectType == "static" {
+		handleStaticS3Proxy(w, r, route.StoragePrefix)
+		return
+	}
+
 	var selectedReplica *models.Replica
 	var minConns int32 = -1
 
-	for i := range replicas {
-		rep := &replicas[i]
+	for i := range route.Replicas {
+		rep := &route.Replicas[i]
 		if rep.InternalPort == 0 {
 			continue
 		}

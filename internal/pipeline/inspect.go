@@ -59,8 +59,16 @@ func InspectRepository(project models.Project) {
 		return
 	}
 
+	var project_type string
+	if framework == "vite" || framework == "vite-bun" || framework == "static-html" {
+		project_type = "static"
+	} else {
+		project_type = "docker"
+	}
+
 	db.DB.Model(&project).Updates(map[string]interface{}{
-		"framework": framework,
-		"status":    "pending_config",
+		"framework":    framework,
+		"project_type": project_type,
+		"status":       "pending_config",
 	})
 }

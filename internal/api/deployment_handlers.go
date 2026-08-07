@@ -184,7 +184,7 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		"internal_port": internalPort,
 	})
 
-	proxy.CacheManager.WarmCache(project.Name, deployment.ID, []models.Replica{replica})
+	proxy.CacheManager.WarmCache(project.Name, deployment.ID, "docker", "", []models.Replica{replica})
 
 	slog.Info("traffic successfully routed to rollback deployment", "deployment_id", deployment.ID)
 

@@ -1,87 +1,132 @@
 services:
-   dploy-db:
-      image: postgres:alpine
-      container_name: dploy-db
-      environment:
-         - POSTGRES_USER=dploy_user
-         - POSTGRES_PASSWORD=dploy_pass
-         - POSTGRES_DB=dploy_db
-      ports:
-         - "5432:5432"
-      volumes:
-         - dploy_pg_data:/var/lib/postgresql
-      healthcheck:
-         test: ["CMD-SHELL", "pg_isready -U dploy_user -d dploy_db"]
-         interval: 5s
-         timeout: 5s
-         retries: 5
-      restart: unless-stopped
+  dploy-db:
+    image: postgres:alpine
+    container_name: dploy-db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - dploy_pg_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-   redis:
-      image: redis:alpine
-      container_name: dploy-redis
-      ports:
-         - "6379:6379"
-      volumes:
-         - dploy_redis_data:/data
-      restart: unless-stopped
+  redis:
+    image: redis:alpine
+    container_name: dploy-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - dploy_redis_data:/data
+    restart: unless-stopped
 
-   dploy-api:
-      build:
-         context: .
-         dockerfile: Dockerfile
-         target: api_runner
-      container_name: dploy-api
-      command: ["./dploy-api"]
-      ports:
-         - "8080:8080"
-      environment:
-         - DATABASE_URL=postgresql://dploy_user:dploy_pass@dploy-db:5432/dploy_db?sslmode=disable
-         - REDIS_ADDR=redis:6379
-         - PORT=8080
-      volumes:
-         - /var/run/docker.sock:/var/run/docker.sock
-         - ./dploy-clones:/app/dploy-clones
-      depends_on:
-         dploy-db:
-            condition: service_healthy
-         redis:
-            condition: service_started
-      restart: unless-stopped
+  minio:
+    image: minio/minio
+    container_name: dploy-minio
+    env_file:
+      - .env
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${S3_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${S3_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - dploy_minio_data:/data
+    restart: unless-stopped
 
-   dploy-worker:
-      build:
-         context: .
-         dockerfile: Dockerfile
-         target: worker_runner
-      container_name: dploy-worker
-      command: ["./dploy-worker"]
-      environment:
-         - DATABASE_URL=postgresql://dploy_user:dploy_pass@dploy-db:5432/dploy_db?sslmode=disable
-         - REDIS_ADDR=redis:6379
-      volumes:
-         - /var/run/docker.sock:/var/run/docker.sock
-         - ./dploy-clones:/app/dploy-clones
-      depends_on:
-         dploy-db:
-            condition: service_healthy
-         redis:
-            condition: service_started
-      restart: unless-stopped
+  minio-init:
+    image: minio/mc
+    container_name: dploy-minio-init
+    env_file:
+      - .env
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set myminio http://minio:9000 ${S3_ACCESS_KEY} ${S3_SECRET_KEY}) do echo '...waiting for minio...' && sleep 1; done;
+      /usr/bin/mc mb myminio/dploy-deployments --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/dploy-deployments;
+      exit 0;
+      "
 
-   dploy-web:
-      build:
-         context: ./frontend
-         dockerfile: Dockerfile
-      container_name: dploy-web
-      ports:
-         - "3000:3000"
-      environment:
-         - NEXT_PUBLIC_API_URL=http://localhost:8080
-      depends_on:
-         - dploy-api
-      restart: unless-stopped
+  dploy-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api_runner
+    container_name: dploy-api
+    command: ["./dploy-api"]
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@dploy-db:5432/${POSTGRES_DB}?sslmode=disable
+      - REDIS_ADDR=redis:6379
+      - PORT=${API_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./dploy-clones:/app/dploy-clones
+    depends_on:
+      dploy-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  dploy-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker_runner
+    container_name: dploy-worker
+    command: ["./dploy-worker"]
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@dploy-db:5432/${POSTGRES_DB}?sslmode=disable
+      - REDIS_ADDR=redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./dploy-clones:/app/dploy-clones
+    depends_on:
+      dploy-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  dploy-web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dploy-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - dploy-api
+    restart: unless-stopped
 
 volumes:
-   dploy_pg_data:
-   dploy_redis_data:
+  dploy_pg_data:
+  dploy_redis_data:
+  dploy_minio_data:

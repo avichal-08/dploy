@@ -1,0 +1,6 @@
+ALTER TABLE projects
+ADD COLUMN IF NOT EXISTS project_type VARCHAR(20) DEFAULT 'docker',
+ADD COLUMN IF NOT EXISTS output_dir VARCHAR(255) DEFAULT 'dist';
+
+ALTER TABLE deployments
+ADD COLUMN IF NOT EXISTS storage_prefix VARCHAR(255);

@@ -20,6 +20,8 @@ type Project struct {
 	Name               string     `gorm:"type:varchar(255);not null;uniqueIndex:idx_user_project"`
 	RepositoryURL      string     `gorm:"type:text;not null"`
 	Framework          string     `gorm:"type:varchar(50)"`
+	ProjectType        string     `gorm:"type:varchar(20);default:'docker'"`
+	OutputDir          string     `gorm:"type:varchar(255);default:'dist'"`
 	BuildCommand       string     `gorm:"type:varchar(255)"`
 	RunCommand         string     `gorm:"type:varchar(255)"`
 	Status             string     `gorm:"type:varchar(50);default:'cloning'"`
@@ -49,6 +51,7 @@ type Deployment struct {
 	Status        string `gorm:"type:varchar(50);default:'pending';not null"`
 	ContainerID   string `gorm:"type:varchar(255)"`
 	InternalPort  int
+	StoragePrefix string    `gorm:"type:varchar(255)"`
 	BuildLogs     string    `gorm:"type:text"`
 	CreatedAt     time.Time `gorm:"autoCreateTime"`
 	FinishedAt    *time.Time

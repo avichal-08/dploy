@@ -14,6 +14,8 @@ FROM alpine:latest AS api_runner
 
 WORKDIR /app
 
+RUN apk add --no-cache docker-cli git
+
 COPY --from=builder /app/bin/dploy-api .
 RUN chmod +x ./dploy-api
 
