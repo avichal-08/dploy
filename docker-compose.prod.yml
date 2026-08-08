@@ -113,3 +113,5 @@ services:
 volumes:
    dploy_redis_data:
    dploy_minio_data:
+   caddy_data:
+   caddy_config:
