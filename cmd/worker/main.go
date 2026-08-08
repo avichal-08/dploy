@@ -76,7 +76,7 @@ func deployWorkerOrchestrator(ctx context.Context, t *asynq.Task) error {
 		return fmt.Errorf("failed to hydrate deployment: %w", err)
 	}
 
-	redisClient := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	redisClient := redis.NewClient(&redis.Options{Addr: "redis:6379"})
 	defer redisClient.Close()
 
 	logWriter := &worker.RedisLogWriter{

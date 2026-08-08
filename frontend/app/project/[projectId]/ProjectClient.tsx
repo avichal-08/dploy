@@ -344,7 +344,7 @@ export default function ProjectOverviewClient({
 
                      <div className="flex flex-wrap items-center gap-3 text-sm">
                         <a
-                           href={`http://${productionUrl}`}
+                           href={`${productionUrl}`}
                            target="_blank"
                            rel="noreferrer"
                            className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors font-medium"
