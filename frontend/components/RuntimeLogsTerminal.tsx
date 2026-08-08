@@ -4,7 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { Terminal, Clock, Copy, Check, RefreshCw } from "lucide-react";
 const API_BASE = "http://localhost:8080/api";
 
-export function RuntimeLogsTerminal({ deploymentId }: { deploymentId: string }) {
+export function RuntimeLogsTerminal({
+   deploymentId,
+}: {
+   deploymentId: string;
+}) {
    const [logs, setLogs] = useState<string[]>([]);
    const [isRefreshing, setIsRefreshing] = useState(false);
    const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
@@ -20,6 +24,9 @@ export function RuntimeLogsTerminal({ deploymentId }: { deploymentId: string }) 
       try {
          const res = await fetch(
             `${API_BASE}/deployments/${deploymentId}/logs/runtime`,
+            {
+               credentials: "include",
+            },
          );
          if (!res.ok) throw new Error("Failed to fetch runtime logs");
 

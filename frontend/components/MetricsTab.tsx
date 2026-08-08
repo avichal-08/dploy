@@ -8,7 +8,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 export function MetricsTab({ projectId }: { projectId: string }) {
   const [metrics, setMetrics] = useState<any>(null);
@@ -17,7 +17,9 @@ export function MetricsTab({ projectId }: { projectId: string }) {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await fetch(`${API_BASE}/projects/${projectId}/metrics`);
+        const res = await fetch(`${API_BASE}/projects/${projectId}/metrics`,, {
+          credentials: "include",
+        });
         if (res.ok) {
           const data = await res.json();
           setMetrics(data);

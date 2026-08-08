@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 
 import { MetricsTab } from "@/components/MetricsTab";
+import { DomainSettings } from "@/components/DomainSettings";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
@@ -784,6 +785,11 @@ export default function ProjectOverviewClient({
 
                {activeTab === "settings" && (
                   <div className="space-y-6 animate-in fade-in duration-300">
+                     <DomainSettings
+                        projectId={projectId}
+                        currentName={projectName}
+                        currentUrl={productionUrl}
+                     />
                      <div className="bg-[#111113] border border-red-500/20 rounded-md p-6 space-y-6">
                         <div>
                            <h2 className="text-lg font-semibold text-red-400">

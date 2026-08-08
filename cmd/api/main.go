@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
-	"strings"
 
 	"github.com/avichal-08/dploy/internal/api"
 	"github.com/avichal-08/dploy/internal/db"
@@ -68,6 +68,7 @@ func main() {
 	mux.HandleFunc("GET /api/projects", api.AuthMiddleware(api.HandleGetProjects))
 	mux.HandleFunc("GET /api/project/{id}", api.AuthMiddleware(api.HandleGetProject))
 	mux.HandleFunc("DELETE /api/project/{id}", api.AuthMiddleware(api.HandleDeleteProject))
+	mux.HandleFunc("PATCH /projects/{id}/name", api.AuthMiddleware(api.HandleDomainNameUpdate))
 
 	mux.HandleFunc("GET /api/projects/{id}/envs", api.AuthMiddleware(api.HandleGetEnvs))
 	mux.HandleFunc("POST /api/projects/{id}/envs", api.AuthMiddleware(api.HandleCreateEnvs))
