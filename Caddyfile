@@ -1,8 +1,11 @@
 {
     on_demand_tls {
-        interval 2m
-        burst 5
+        ask http://127.0.0.1:5555
     }
+}
+
+http://127.0.0.1:5555 {
+    respond 200
 }
 
 dploy.avichal.me {
