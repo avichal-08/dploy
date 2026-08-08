@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL;
+const WS_BASE = process.env.NEXT_PUBLIC_WS_BASE;
 
 const BUILD_PHASES = [
   { id: "cloning", label: "Cloning Repo" },
