@@ -42,9 +42,6 @@ services:
          target: api_runner
       container_name: dploy-api
       command: ["./dploy-api"]
-      ports:
-         - "8080:8080"
-         - "8000:8000"
       environment:
          - DATABASE_URL=${DATABASE_URL}
          - REDIS_ADDR=redis:6379
@@ -94,11 +91,24 @@ services:
             NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
             NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE}
             NEXT_PUBLIC_WS_BASE: ${NEXT_PUBLIC_WS_BASE}
-      ports:
-         - "3000:3000"
       environment:
          - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
          - NEXT_PUBLIC_WS_BASE=${NEXT_PUBLIC_WS_BASE}
+
+   caddy:
+      image: caddy:alpine
+      container_name: dploy-caddy
+      restart: unless-stopped
+      ports:
+         - "80:80"
+         - "443:443"
+      volumes:
+         - ./Caddyfile:/etc/caddy/Caddyfile
+         - caddy_data:/data
+         - caddy_config:/config
+      depends_on:
+         - dploy-web
+         - dploy-api
 
 volumes:
    dploy_redis_data:

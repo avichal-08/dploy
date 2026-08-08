@@ -1,0 +1,21 @@
+{
+    on_demand_tls {
+        interval 2m
+        burst 5
+    }
+}
+
+dploy.avichal.me {
+    reverse_proxy dploy-web:3000
+}
+
+api.dploy.avichal.me {
+    reverse_proxy dploy-api:8080
+}
+
+https:// {
+    tls {
+        on_demand
+    }
+    reverse_proxy dploy-api:8000
+}
