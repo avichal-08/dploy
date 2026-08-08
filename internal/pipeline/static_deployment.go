@@ -60,9 +60,18 @@ func RunStaticDeployment(project models.Project, deploymentID string, buildDir s
 
 	logWriter.Write([]byte("--> Static assets uploaded successfully. Updating proxy routes...\n"))
 
+	baseDomain := os.Getenv("BASE_DOMAIN")
+	baseDomainProtocol := os.Getenv("BASE_DOMAIN_PROTOCOL")
+
+	var productionURL string
+	if baseDomain != "" {
+		productionURL = fmt.Sprintf("%s://%s.%s", baseDomainProtocol, project.Name, baseDomain)
+	}
+
 	db.DB.Model(&models.Project{ID: project.ID}).Updates(map[string]interface{}{
 		"status":               "deployed",
 		"active_deployment_id": deploymentID,
+		"production_url":       productionURL,
 	})
 
 	db.DB.Model(&models.Deployment{ID: deploymentID}).Updates(map[string]interface{}{

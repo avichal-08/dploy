@@ -139,9 +139,18 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"status":        "healthy",
 	})
 
+	baseDomain := os.Getenv("BASE_DOMAIN")
+	baseDomainProtocol := os.Getenv("BASE_DOMAIN_PROTOCOL")
+
+	var productionURL string
+	if baseDomain != "" {
+		productionURL = fmt.Sprintf("%s://%s.%s", baseDomainProtocol, project.Name, baseDomain)
+	}
+
 	db.DB.Model(&models.Project{ID: project.ID}).Updates(map[string]interface{}{
 		"status":               "deployed",
 		"active_deployment_id": deployment.ID,
+		"production_url":       productionURL,
 	})
 
 	proxy.CacheManager.Invalidate(project.Name)
