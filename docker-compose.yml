@@ -71,6 +71,8 @@ services:
          - S3_ACCESS_KEY=${S3_ACCESS_KEY}
          - S3_SECRET_KEY=${S3_SECRET_KEY}
          - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+         - BASE_DOMAIN=${BASE_DOMAIN}
+         - BASE_DOMAIN_PROTOCOL=${BASE_DOMAIN_PROTOCOL}
       volumes:
          - /var/run/docker.sock:/var/run/docker.sock
          - ./dploy-clones:/app/dploy-clones
@@ -94,6 +96,8 @@ services:
          - JWT_SECRET=${JWT_SECRET}
          - S3_ACCESS_KEY=${S3_ACCESS_KEY}
          - S3_SECRET_KEY=${S3_SECRET_KEY}
+         - BASE_DOMAIN=${BASE_DOMAIN}
+         - BASE_DOMAIN_PROTOCOL=${BASE_DOMAIN_PROTOCOL}
       volumes:
          - /var/run/docker.sock:/var/run/docker.sock
          - ./dploy-clones:/app/dploy-clones
