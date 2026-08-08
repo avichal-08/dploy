@@ -84,7 +84,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	incConn(selectedReplica.ID)
 	defer decConn(selectedReplica.ID)
 
-	targetStr := fmt.Sprintf("http://localhost:%d", selectedReplica.InternalPort)
+	targetStr := fmt.Sprintf("http://host.docker.internal:%d", selectedReplica.InternalPort)
 	targetURL, err := url.Parse(targetStr)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
