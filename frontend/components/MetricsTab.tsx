@@ -17,7 +17,7 @@ export function MetricsTab({ projectId }: { projectId: string }) {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await fetch(`${API_BASE}/projects/${projectId}/metrics`,, {
+        const res = await fetch(`${API_BASE}/projects/${projectId}/metrics`, {
           credentials: "include",
         });
         if (res.ok) {
