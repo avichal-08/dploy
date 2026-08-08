@@ -15,8 +15,8 @@ import {
   RotateCcw
 } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+const WS_BASE = process.env.NEXT_PUBLIC_WS_URL;
 
 const BUILD_PHASES = [
   { id: "cloning", label: "Cloning Repo" },
