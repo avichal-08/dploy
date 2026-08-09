@@ -2,8 +2,6 @@ services:
    redis:
       image: redis:alpine
       container_name: dploy-redis
-      ports:
-         - "6379:6379"
       volumes:
          - dploy_redis_data:/data
       restart: unless-stopped
@@ -11,9 +9,6 @@ services:
    minio:
       image: minio/minio
       container_name: dploy-minio
-      ports:
-         - "9000:9000"
-         - "9001:9001"
       environment:
          - MINIO_ROOT_USER=${S3_ACCESS_KEY}
          - MINIO_ROOT_PASSWORD=${S3_SECRET_KEY}
