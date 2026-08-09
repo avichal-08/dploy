@@ -42,7 +42,7 @@ func HandleUpdateCustomDomain(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, response)
 }
 
-func HandleVerifyDomain(w http.ResponseWriter, r *http.Request) {
+func HandleVerifyCustomDomain(w http.ResponseWriter, r *http.Request) {
 	domain := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("domain")))
 	if domain == "" {
 		w.WriteHeader(http.StatusBadRequest)
