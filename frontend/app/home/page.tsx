@@ -7,19 +7,18 @@ import {
   Command,
   Plus,
   Box,
-  Settings,
   MoreVertical,
   GitBranch,
   Clock,
   TerminalSquare,
   LogOut,
+  ExternalLink,
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 const SIDEBAR_NAV = [
-  { label: "Projects", icon: Box, active: true, href: "/home" },
-  { label: "Settings", icon: Settings, active: false, href: "/settings" },
+  { label: "Projects", icon: Box, active: true, href: "/home" }
 ];
 
 export default function HomePage() {
@@ -98,13 +97,13 @@ export default function HomePage() {
       case "deployed":
       case "success":
       case "running":
-        return "bg-green-500";
+        return "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]";
       case "failed":
-        return "bg-red-500";
+        return "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]";
       case "cloning":
       case "building":
       case "pending":
-        return "bg-amber-500";
+        return "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]";
       default:
         return "bg-[#A1A1AA]";
     }
@@ -156,135 +155,139 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen bg-[#09090B] text-[#FAFAFA] font-sans antialiased overflow-hidden selection:bg-blue-500/30">
-      <aside className="w-56 border-r border-[#27272A] bg-[#09090B] flex flex-col flex-shrink-0">
-        <div className="h-14 flex items-center px-4 border-b border-[#27272A]">
-          <div className="flex items-center gap-2">
-            <TerminalSquare className="w-5 h-5 text-[#FAFAFA]" />
-            <span className="font-bold tracking-tight text-sm">DPLOY</span>
+
+      <aside className="w-60 border-r border-[#27272A]/70 bg-[#09090B] flex flex-col flex-shrink-0">
+        <div className="h-16 flex items-center px-5 border-b border-[#27272A]/70">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-md bg-[#111113] border border-[#27272A] flex items-center justify-center">
+              <TerminalSquare className="w-4 h-4 text-[#FAFAFA]" />
+            </div>
+            <span className="font-bold tracking-wider text-sm">DPLOY<span className="text-blue-500">.</span></span>
           </div>
         </div>
 
-        <div className="p-3 space-y-0.5 flex-1 overflow-y-auto">
+        <div className="p-3 space-y-1 flex-1 overflow-y-auto">
+          <div className="px-3 py-1.5 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+            Platform
+          </div>
           {SIDEBAR_NAV.map((item) => (
             <button
               key={item.label}
               onClick={() => (window.location.href = item.href)}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition-all ${
                 item.active
-                  ? "bg-[#27272A] text-[#FAFAFA] font-medium"
+                  ? "bg-[#1f1f23] text-[#FAFAFA] border border-[#27272A]/50 shadow-sm"
                   : "text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#111113]"
               }`}
             >
-              <item.icon className="w-4 h-4 shrink-0" />
+              <item.icon className="w-4 h-4 shrink-0 text-[#A1A1AA]" />
               {item.label}
             </button>
           ))}
         </div>
 
-        <div className="p-3 border-t border-[#27272A] relative">
+        <div className="p-3 border-t border-[#27272A]/70 relative">
           {isUserMenuOpen && (
-            <div className="absolute bottom-[calc(100%-8px)] left-3 right-3 bg-[#111113] border border-[#27272A] rounded-md shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-100">
+            <div className="absolute bottom-[calc(100%-4px)] left-3 right-3 bg-[#111113] border border-[#27272A] rounded-lg shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[#FAFAFA] hover:bg-[#27272A] transition-colors text-left text-red-400 hover:text-red-300"
+                className="w-full flex items-center gap-2.5 px-3.5 py-3 text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors text-left"
               >
-                <LogOut className="w-4 h-4" />
-                Log Out
+                <LogOut className="w-3.5 h-3.5" />
+                Sign out of account
               </button>
             </div>
           )}
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors text-left ${
-              isUserMenuOpen ? "bg-[#111113]" : "hover:bg-[#111113]"
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all text-left border border-transparent ${
+              isUserMenuOpen ? "bg-[#111113] border-[#27272A]" : "hover:bg-[#111113]/60 hover:border-[#27272A]/40"
             }`}
           >
-            <div className="w-6 h-6 rounded bg-[#27272A] border border-[#27272A] shrink-0 flex items-center justify-center font-bold text-xs text-[#FAFAFA]">
+            <div className="w-7 h-7 rounded-md bg-[#27272A] border border-[#3f3f46] shrink-0 flex items-center justify-center font-bold text-xs text-[#FAFAFA] shadow-inner">
               {user ? (user.Email || user.email || "D")[0].toUpperCase() : ""}
             </div>
             <div className="flex-1 min-w-0">
               {user ? (
-                <p className="text-sm font-medium text-[#FAFAFA] truncate">
+                <p className="text-xs font-medium text-[#FAFAFA] truncate">
                   {user.Email || user.email || "Developer"}
                 </p>
               ) : (
-                <div className="h-4 w-20 bg-[#27272A] rounded animate-pulse" />
+                <div className="h-3.5 w-24 bg-[#27272A] rounded animate-pulse" />
               )}
             </div>
-            <MoreVertical className="w-4 h-4 text-[#A1A1AA]" />
+            <MoreVertical className="w-3.5 h-3.5 text-[#71717A]" />
           </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 flex items-center justify-between px-6 border-b border-[#27272A] bg-[#09090B] shrink-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#09090B]">
+
+        <header className="h-16 flex items-center justify-between px-8 border-b border-[#27272A]/70 bg-[#09090B]/80 backdrop-blur-md shrink-0">
           <div className="flex items-center flex-1">
-            <div className="relative w-full max-w-md flex items-center group">
-              <Search className="w-4 h-4 text-[#A1A1AA] absolute left-2.5 group-focus-within:text-[#FAFAFA] transition-colors" />
+            <div className="relative w-full max-w-sm flex items-center group">
+              <Search className="w-3.5 h-3.5 text-[#71717A] absolute left-3 group-focus-within:text-[#FAFAFA] transition-colors" />
               <input
                 id="project-search"
                 type="text"
-                placeholder="Search projects..."
+                placeholder="Search projects or repositories..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#111113] border border-[#27272A] rounded-md pl-9 pr-12 py-1.5 text-sm text-[#FAFAFA] placeholder:text-[#52525B] focus:outline-none focus:border-[#FAFAFA] focus:ring-1 focus:ring-[#FAFAFA] transition-all"
+                className="w-full bg-[#111113] border border-[#27272A] rounded-lg pl-9 pr-12 py-2 text-xs text-[#FAFAFA] placeholder:text-[#52525B] focus:outline-none focus:border-[#52525B] focus:ring-1 focus:ring-[#52525B] transition-all shadow-inner"
               />
-              <div className="absolute right-2.5 flex items-center gap-1 text-[#52525B] group-focus-within:opacity-0 transition-opacity">
+              <div className="absolute right-3 flex items-center gap-1 text-[#52525B] pointer-events-none">
                 <Command className="w-3 h-3" />
-                <span className="text-[10px] font-medium">K</span>
+                <span className="text-[10px] font-mono">K</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button className="text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors">
-              <Bell className="w-4 h-4" />
-            </button>
-          </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-6xl mx-auto space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <main className="flex-1 overflow-y-auto p-8 lg:p-10">
+          <div className="max-w-7xl mx-auto space-y-8">
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#27272A]/50 pb-6">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#FAFAFA]">
+                <h1 className="text-xl font-bold tracking-tight text-[#FAFAFA]">
                   Projects
                 </h1>
-                <p className="text-sm text-[#A1A1AA] mt-1">
-                  Manage and deploy your applications.
+                <p className="text-xs text-[#A1A1AA] mt-0.5">
+                  Manage deployment pipelines, runtime metrics, and edge networking.
                 </p>
               </div>
 
               <button
                 onClick={() => (window.location.href = "/project/create")}
-                className="flex items-center justify-center gap-2 bg-[#FAFAFA] text-[#09090B] px-3.5 py-1.5 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors shrink-0"
+                className="flex items-center justify-center gap-2 bg-[#FAFAFA] text-[#09090B] px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#E4E4E7] transition-all shadow-sm shrink-0"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 Create Project
               </button>
             </div>
 
+            {/* Content Display */}
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="bg-[#111113] border border-[#27272A] rounded-md p-4 h-[160px] animate-pulse flex flex-col justify-between"
+                    className="bg-[#111113] border border-[#27272A]/60 rounded-xl p-5 h-40 animate-pulse flex flex-col justify-between"
                   >
                     <div className="flex justify-between items-start">
-                      <div className="w-32 h-5 bg-[#27272A] rounded" />
-                      <div className="w-16 h-5 bg-[#27272A] rounded" />
+                      <div className="w-32 h-4 bg-[#27272A] rounded" />
+                      <div className="w-16 h-4 bg-[#27272A] rounded" />
                     </div>
-                    <div className="space-y-3">
-                      <div className="w-3/4 h-4 bg-[#27272A] rounded" />
-                      <div className="w-1/2 h-4 bg-[#27272A] rounded" />
+                    <div className="space-y-2">
+                      <div className="w-3/4 h-3.5 bg-[#27272A] rounded" />
+                      <div className="w-1/2 h-3.5 bg-[#27272A] rounded" />
                     </div>
-                    <div className="w-full h-4 bg-[#27272A] rounded mt-4" />
+                    <div className="w-full h-3.5 bg-[#27272A] rounded mt-2" />
                   </div>
                 ))}
               </div>
             ) : filteredProjects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {filteredProjects.map((project: any) => {
                   const projectId = project.ID || project.id;
                   const projectName = project.Name || project.name;
@@ -299,47 +302,48 @@ export default function HomePage() {
                     <div
                       key={projectId}
                       onClick={() => (window.location.href = `/project/${projectId}`)}
-                      className="group flex flex-col bg-[#111113] border border-[#27272A] rounded-md p-4 hover:border-[#52525B] transition-colors cursor-pointer"
+                      className="group flex flex-col bg-[#111113]/90 hover:bg-[#161619] border border-[#27272A]/80 hover:border-[#52525B] rounded-xl p-5 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <h3 className="font-semibold text-[#FAFAFA] text-base leading-none truncate pr-2">
+                        <h3 className="font-semibold text-[#FAFAFA] text-sm tracking-wide truncate pr-2 group-hover:text-blue-400 transition-colors">
                           {projectName}
                         </h3>
 
-                        <div className="flex items-center gap-1.5 bg-[#09090B] border border-[#27272A] px-2 py-0.5 rounded-md shrink-0">
+                        <div className="flex items-center gap-1.5 bg-[#09090B] border border-[#27272A] px-2.5 py-1 rounded-full shrink-0">
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${getStatusColor(
                               status
                             )}`}
                           />
-                          <span className="text-[11px] font-medium text-[#A1A1AA] capitalize">
+                          <span className="text-[10px] font-medium text-[#A1A1AA] uppercase tracking-wider">
                             {getStatusText(status)}
                           </span>
                         </div>
                       </div>
 
-                      <div className="space-y-3 mb-6 flex-1">
-                        <div className="flex items-center gap-2 text-sm text-[#A1A1AA]">
-                          <GitBranch className="w-4 h-4 shrink-0" />
-                          <span className="truncate">{formatRepo(repoUrl)}</span>
+                      <div className="space-y-2.5 mb-6 flex-1 text-xs text-[#A1A1AA]">
+                        <div className="flex items-center gap-2">
+                          <GitBranch className="w-3.5 h-3.5 shrink-0 text-[#71717A]" />
+                          <span className="truncate font-mono">{formatRepo(repoUrl)}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-[#A1A1AA]">
-                          <Box className="w-4 h-4 shrink-0" />
+                        <div className="flex items-center gap-2">
+                          <Box className="w-3.5 h-3.5 shrink-0 text-[#71717A]" />
                           <span className="capitalize">{framework}</span>
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-[#27272A] flex items-center justify-between text-xs">
+                      <div className="pt-3 border-t border-[#27272A]/60 flex items-center justify-between text-xs">
                         <a
                           href={productionUrl.startsWith("http") ? productionUrl : `https://${productionUrl}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[#FAFAFA] hover:underline truncate mr-4 font-medium"
+                          className="text-[#A1A1AA] hover:text-[#FAFAFA] flex items-center gap-1 truncate mr-2 font-mono text-[11px] transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {productionUrl.replace("https://", "").replace("http://", "")}
+                          <span className="truncate">{productionUrl.replace("https://", "").replace("http://", "")}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
                         </a>
-                        <div className="flex items-center gap-1 text-[#52525B] shrink-0">
+                        <div className="flex items-center gap-1 text-[#71717A] shrink-0 text-[10px]">
                           <Clock className="w-3 h-3" />
                           <span>{formatDate(createdAt)}</span>
                         </div>
@@ -349,39 +353,40 @@ export default function HomePage() {
                 })}
               </div>
             ) : searchQuery ? (
-              <div className="flex flex-col items-center justify-center py-24 border border-dashed border-[#27272A] rounded-md bg-[#111113]/50">
-                <Search className="w-8 h-8 text-[#52525B] mb-3" />
-                <h3 className="text-[#FAFAFA] font-medium mb-1">
+              <div className="flex flex-col items-center justify-center py-20 border border-dashed border-[#27272A] rounded-xl bg-[#111113]/30">
+                <Search className="w-6 h-6 text-[#71717A] mb-3" />
+                <h3 className="text-[#FAFAFA] text-sm font-medium mb-1">
                   No results found
                 </h3>
-                <p className="text-sm text-[#A1A1AA] mb-4">
+                <p className="text-xs text-[#A1A1AA] mb-4">
                   No projects matching `{searchQuery}`.
                 </p>
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="text-sm text-[#FAFAFA] hover:underline"
+                  className="text-xs text-blue-400 hover:underline font-medium"
                 >
-                  Clear search
+                  Clear search filter
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-24 border border-dashed border-[#27272A] rounded-md bg-[#111113]/50">
+              <div className="flex flex-col items-center justify-center py-24 border border-dashed border-[#27272A] rounded-xl bg-[#111113]/30">
                 <Box className="w-8 h-8 text-[#52525B] mb-3" />
-                <h3 className="text-[#FAFAFA] font-medium mb-1">
-                  No projects found
+                <h3 className="text-[#FAFAFA] text-sm font-medium mb-1">
+                  No projects deployed
                 </h3>
-                <p className="text-sm text-[#A1A1AA] mb-4">
-                  Deploy your first repository to get started.
+                <p className="text-xs text-[#A1A1AA] mb-5">
+                  Connect a repository to initialize your first automated pipeline.
                 </p>
                 <button
                   onClick={() => (window.location.href = "/project/create")}
-                  className="flex items-center gap-2 bg-[#FAFAFA] text-[#09090B] px-3.5 py-1.5 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors"
+                  className="flex items-center gap-2 bg-[#FAFAFA] text-[#09090B] px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#E4E4E7] transition-all shadow-sm"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   Create Project
                 </button>
               </div>
             )}
+
           </div>
         </main>
       </div>
