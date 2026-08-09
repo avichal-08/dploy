@@ -12,6 +12,7 @@ import {
   GitBranch,
   Clock,
   TerminalSquare,
+  LogOut,
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
@@ -26,6 +27,7 @@ export default function HomePage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -77,6 +79,18 @@ export default function HomePage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      window.location.href = "/auth/login";
+    } catch (err) {
+      console.error("Failed to log out", err);
+    }
+  };
 
   const getStatusColor = (rawStatus: string) => {
     const status = (rawStatus || "").toLowerCase();
@@ -167,9 +181,27 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="p-3 border-t border-[#27272A]">
-          <button className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-[#111113] transition-colors text-left">
-            <div className="w-6 h-6 rounded bg-[#27272A] border border-[#27272A] shrink-0" />
+        <div className="p-3 border-t border-[#27272A] relative">
+          {isUserMenuOpen && (
+            <div className="absolute bottom-[calc(100%-8px)] left-3 right-3 bg-[#111113] border border-[#27272A] rounded-md shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-100">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[#FAFAFA] hover:bg-[#27272A] transition-colors text-left text-red-400 hover:text-red-300"
+              >
+                <LogOut className="w-4 h-4" />
+                Log Out
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors text-left ${
+              isUserMenuOpen ? "bg-[#111113]" : "hover:bg-[#111113]"
+            }`}
+          >
+            <div className="w-6 h-6 rounded bg-[#27272A] border border-[#27272A] shrink-0 flex items-center justify-center font-bold text-xs text-[#FAFAFA]">
+              {user ? (user.Email || user.email || "D")[0].toUpperCase() : ""}
+            </div>
             <div className="flex-1 min-w-0">
               {user ? (
                 <p className="text-sm font-medium text-[#FAFAFA] truncate">
@@ -305,7 +337,7 @@ export default function HomePage() {
                           className="text-[#FAFAFA] hover:underline truncate mr-4 font-medium"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {productionUrl.replace("https://", "")}
+                          {productionUrl.replace("https://", "").replace("http://", "")}
                         </a>
                         <div className="flex items-center gap-1 text-[#52525B] shrink-0">
                           <Clock className="w-3 h-3" />
