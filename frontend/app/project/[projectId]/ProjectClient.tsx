@@ -28,6 +28,7 @@ import {
 
 import { MetricsTab } from "@/components/MetricsTab";
 import { DomainSettings } from "@/components/DomainSettings";
+import { CustomDomainSettings } from "@/components/CustomDomainSettings";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
@@ -789,6 +790,13 @@ export default function ProjectOverviewClient({
                         projectId={projectId}
                         currentName={projectName}
                         currentUrl={productionUrl}
+                     />
+
+                     <CustomDomainSettings
+                        projectId={projectId}
+                        currentCustomDomain={
+                           project.CustomDomain || project.custom_domain || null
+                        }
                      />
                      <div className="bg-[#111113] border border-red-500/20 rounded-md p-6 space-y-6">
                         <div>

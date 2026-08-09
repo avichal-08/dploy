@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 
+	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
 )
 
@@ -38,14 +40,32 @@ func GetReplicaConnectionCount(replicaID string) int32 {
 }
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
-
-	hostParts := strings.Split(r.Host, ".")
-	if len(hostParts) < 2 {
-		http.Error(w, "Invalid Host", http.StatusBadRequest)
-		return
+	host := r.Host
+	if idx := strings.Index(host, ":"); idx != -1 {
+		host = host[:idx]
 	}
 
-	projectName := hostParts[0]
+	var projectName string
+	baseDomain := os.Getenv("BASE_DOMAIN")
+
+	// db query for standard platform subdomain
+	if baseDomain != "" && strings.HasSuffix(host, "."+baseDomain) {
+		hostParts := strings.Split(host, ".")
+		if len(hostParts) < 2 {
+			http.Error(w, "Invalid Host", http.StatusBadRequest)
+			return
+		}
+		projectName = hostParts[0]
+	} else {
+		// db query for custom domain
+		var project models.Project
+		if err := db.DB.Where("custom_domain = ?", host).First(&project).Error; err != nil {
+			slog.Warn("custom domain lookup failed", "domain", host, "error", err)
+			http.Error(w, "Custom Domain Not Found", http.StatusNotFound)
+			return
+		}
+		projectName = project.Name
+	}
 
 	route, err := CacheManager.GetRoute(projectName)
 	if err != nil {

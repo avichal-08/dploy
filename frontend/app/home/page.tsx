@@ -39,7 +39,7 @@ export default function HomePage() {
           setProjects(data || []);
         }
 
-        const userRes = await fetch(`${API_BASE}/users`, {
+        const userRes = await fetch(`${API_BASE}/user`, {
           credentials: "include",
         });
         if (userRes.ok) {

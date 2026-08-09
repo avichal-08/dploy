@@ -62,13 +62,16 @@ func main() {
 	mux.HandleFunc("POST /api/auth/login", api.HandleLogin)
 	mux.HandleFunc("POST /api/auth/logout", api.HandleLogout)
 
-	mux.HandleFunc("GET /api/users", api.AuthMiddleware(api.HandleGetUser))
+	mux.HandleFunc("GET /api/user", api.AuthMiddleware(api.HandleGetUser))
 
 	mux.HandleFunc("POST /api/projects", api.AuthMiddleware(api.HandleCreateProject))
 	mux.HandleFunc("GET /api/projects", api.AuthMiddleware(api.HandleGetProjects))
 	mux.HandleFunc("GET /api/project/{id}", api.AuthMiddleware(api.HandleGetProject))
 	mux.HandleFunc("DELETE /api/project/{id}", api.AuthMiddleware(api.HandleDeleteProject))
 	mux.HandleFunc("PATCH /api/projects/{id}/name", api.AuthMiddleware(api.HandleDomainNameUpdate))
+
+	mux.HandleFunc("PATCH /api/projects/{id}/custom-domain", api.AuthMiddleware(api.HandleUpdateCustomDomain))
+	mux.HandleFunc("GET /api/internal/verify-domain", api.HandleVerifyCustomDomain)
 
 	mux.HandleFunc("GET /api/projects/{id}/envs", api.AuthMiddleware(api.HandleGetEnvs))
 	mux.HandleFunc("POST /api/projects/{id}/envs", api.AuthMiddleware(api.HandleCreateEnvs))

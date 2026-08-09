@@ -26,6 +26,7 @@ type Project struct {
 	RunCommand         string     `gorm:"type:varchar(255)"`
 	Status             string     `gorm:"type:varchar(50);default:'cloning'"`
 	ProductionURL      string     `gorm:"type:text"`
+	CustomDomain       *string    `gorm:"uniqueIndex:idx_custom_domain"`
 	TargetConcurrency  *int       `gorm:"type:integer"`
 	CreatedAt          time.Time  `gorm:"autoCreateTime"`
 	ActiveDeploymentID *string    `gorm:"type:uuid"`
