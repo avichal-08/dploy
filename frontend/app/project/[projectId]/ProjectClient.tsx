@@ -302,6 +302,7 @@ export default function ProjectOverviewClient({
       project.ProductionURL ||
       project.production_url ||
       `${projectName}.localhost:8000`;
+   const customDomain = project.CustomDomain || project.custom_domain;
 
    const deployments = project.Deployments || project.deployments || [];
    const sortedDeployments = [...deployments].sort((a, b) => {
@@ -354,6 +355,21 @@ export default function ProjectOverviewClient({
                            {productionUrl}
                            <ExternalLink className="w-3.5 h-3.5" />
                         </a>
+
+                        {customDomain && (
+                           <>
+                              <span className="text-[#27272A]">•</span>
+                              <a
+                                 href={`https://${customDomain}`}
+                                 target="_blank"
+                                 rel="noreferrer"
+                                 className="flex items-center gap-1.5 text-green-400 hover:text-green-300 transition-colors font-medium"
+                              >
+                                 https://{customDomain}
+                                 <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                           </>
+                        )}
 
                         <span className="text-[#27272A]">•</span>
 

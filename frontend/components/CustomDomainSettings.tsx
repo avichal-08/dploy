@@ -94,30 +94,61 @@ export function CustomDomainSettings({
                </div>
             )}
 
-            <div className="bg-[#09090B] p-4 rounded-md border border-[#27272A]">
-               <h3 className="text-sm font-medium mb-2 text-[#FAFAFA]">
-                  DNS Configuration
-               </h3>
-               <p className="text-xs text-[#A1A1AA] mb-3">
-                  Set the following record on your DNS provider to point your
-                  domain to our servers.
-               </p>
-               <div className="grid grid-cols-3 text-xs text-[#A1A1AA] font-mono bg-[#111113] p-2 rounded border border-[#27272A]">
-                  <span>
-                     Type: <strong className="text-[#FAFAFA]">CNAME</strong>
-                  </span>
-                  <span>
-                     Name: <strong className="text-[#FAFAFA]">www</strong>
-                  </span>
-                  <span>
-                     Value:{" "}
-                     <strong className="text-[#FAFAFA]">
-                        dploy.avichal.me
-                     </strong>
-                  </span>
+            <div className="bg-[#09090B] p-4 rounded-md border border-[#27272A] space-y-4">
+               <div>
+                  <h3 className="text-sm font-medium mb-1 text-[#FAFAFA]">
+                     DNS Configuration
+                  </h3>
+                  <p className="text-xs text-[#A1A1AA]">
+                     Set one of the following records on your DNS provider to
+                     point your domain to our servers.
+                  </p>
+               </div>
+
+               <div className="space-y-3">
+                  <div>
+                     <span className="text-xs font-medium text-[#A1A1AA] mb-1 block">
+                        For Subdomains (e.g., www, app, api)
+                     </span>
+                     <div className="grid grid-cols-3 text-xs text-[#A1A1AA] font-mono bg-[#111113] p-2 rounded border border-[#27272A]">
+                        <span>
+                           Type:{" "}
+                           <strong className="text-[#FAFAFA]">CNAME</strong>
+                        </span>
+                        <span>
+                           Name: <strong className="text-[#FAFAFA]">www</strong>
+                        </span>
+                        <span>
+                           Value:{" "}
+                           <strong className="text-[#FAFAFA]">
+                              dploy.avichal.me
+                           </strong>
+                        </span>
+                     </div>
+                  </div>
+
+                  <div>
+                     <span className="text-xs font-medium text-[#A1A1AA] mb-1 block">
+                        For Apex/Root Domains (e.g., example.com)
+                     </span>
+                     <div className="grid grid-cols-3 text-xs text-[#A1A1AA] font-mono bg-[#111113] p-2 rounded border border-[#27272A]">
+                        <span>
+                           Type:{" "}
+                           <strong className="text-[#FAFAFA]">A Record</strong>
+                        </span>
+                        <span>
+                           Name: <strong className="text-[#FAFAFA]">@</strong>
+                        </span>
+                        <span>
+                           Value:{" "}
+                           <strong className="text-[#FAFAFA]">
+                              20.198.90.3
+                           </strong>
+                        </span>
+                     </div>
+                  </div>
                </div>
             </div>
-
             <div className="flex justify-end items-center pt-4 border-t border-[#27272A] mt-6">
                <button
                   type="submit"
