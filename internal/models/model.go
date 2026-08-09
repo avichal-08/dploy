@@ -6,9 +6,8 @@ import (
 
 type User struct {
 	ID        string    `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	GithubID  string    `gorm:"type:varchar(255);uniqueIndex;not null"`
 	Email     string    `gorm:"type:varchar(255);uniqueIndex;not null"`
-	AvatarURL string    `gorm:"type:text"`
+	Password  string    `gorm:"not null"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 
 	Projects []Project `gorm:"constraint:OnDelete:CASCADE;"`

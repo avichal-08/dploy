@@ -1,93 +1,87 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, AlertCircle, ArrowRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [identifier, setIdentifier] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+   const [email, setEmail] = useState("");
+   const [password, setPassword] = useState("");
+   const [error, setError] = useState("");
+   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+   const handleLogin = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError("");
+      setIsLoading(true);
 
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ identifier }),
-      });
+      try {
+         const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+            credentials: "include",
+         });
 
-      const data = await res.json();
+         const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to log in");
+         if (!res.ok) {
+            throw new Error(data.error || "Invalid credentials");
+         }
+
+         window.location.href = "/home";
+      } catch (err: any) {
+         setError(err.message);
+      } finally {
+         setIsLoading(false);
       }
+   };
 
-      router.push("/home");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+   return (
+      <div className="max-w-sm w-full mx-auto bg-[#111113] border border-[#27272A] rounded-md p-8 shadow-2xl">
+         <h2 className="text-xl font-bold text-[#FAFAFA] mb-6 text-center">Log in to Dploy</h2>
 
-  return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
-      <div>
-        <h3 className="text-lg font-medium text-[#FAFAFA] mb-1">Welcome back</h3>
-        <p className="text-sm text-[#A1A1AA]">Sign in to your account to continue.</p>
+         {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-md text-sm mb-6">
+               {error}
+            </div>
+         )}
+
+         <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+               <label className="block text-xs font-medium text-[#A1A1AA]">Email</label>
+               <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] focus:outline-none focus:border-blue-500 transition-colors"
+               />
+            </div>
+            <div className="space-y-2">
+               <label className="block text-xs font-medium text-[#A1A1AA]">Password</label>
+               <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] focus:outline-none focus:border-blue-500 transition-colors"
+               />
+            </div>
+
+            <button
+               type="submit"
+               disabled={isLoading}
+               className="w-full flex justify-center items-center gap-2 bg-[#FAFAFA] text-[#09090B] py-2 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors mt-4 disabled:opacity-50"
+            >
+               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+               {isLoading ? "Logging in..." : "Log In"}
+            </button>
+
+            <p className="text-center text-xs text-[#A1A1AA] mt-6">
+               Don't have an account? <Link href="/auth/register" className="text-blue-400 hover:underline">Sign up with Invite Code</Link>
+            </p>
+         </form>
       </div>
-
-      <div>
-        <label htmlFor="identifier" className="block text-sm font-medium text-[#FAFAFA]">
-          Email or GitHub ID
-        </label>
-        <div className="mt-2">
-          <input
-            id="identifier"
-            type="text"
-            required
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            className="block w-full bg-[#09090B] border border-[#27272A] rounded-md px-4 py-2.5 text-sm text-[#FAFAFA] placeholder-[#52525B] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-            placeholder="octocat@github.com"
-          />
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md flex items-start gap-2.5">
-          <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-500">{error}</p>
-        </div>
-      )}
-
-      <div>
-        <button
-          type="submit"
-          disabled={isLoading || !identifier}
-          className="w-full flex items-center justify-center gap-2 bg-[#FAFAFA] text-[#09090B] py-2.5 px-4 rounded-md font-medium text-sm hover:bg-[#E4E4E7] transition-all disabled:opacity-50"
-        >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in"}
-          {!isLoading && <ArrowRight className="w-4 h-4" />}
-        </button>
-      </div>
-
-      <div className="text-center text-sm">
-        <span className="text-[#A1A1AA]">Don't have an account? </span>
-        <Link href="/auth/register" className="font-medium text-blue-400 hover:text-blue-300">
-          Register here
-        </Link>
-      </div>
-    </form>
-  );
+   );
 }

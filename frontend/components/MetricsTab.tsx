@@ -20,6 +20,12 @@ export function MetricsTab({ projectId }: { projectId: string }) {
         const res = await fetch(`${API_BASE}/projects/${projectId}/metrics`, {
           credentials: "include",
         });
+
+        if (res.status === 401) {
+           window.location.href = "/auth/login";
+           return;
+        }
+
         if (res.ok) {
           const data = await res.json();
           setMetrics(data);

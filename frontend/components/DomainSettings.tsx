@@ -48,6 +48,11 @@ export function DomainSettings({
             },
          );
 
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          const data = await res.json();
 
          if (!res.ok) {
@@ -78,7 +83,7 @@ export function DomainSettings({
                <input
                   type="text"
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value.toLowerCase())} // Force lowercase on typing
+                  onChange={(e) => setNewName(e.target.value.toLowerCase())}
                   className="flex-1 bg-black border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="my-awesome-project"
                   required
@@ -100,12 +105,12 @@ export function DomainSettings({
                <p className="text-sm text-gray-500">
                   Current URL:{" "}
                   <a
-                     href={currentUrl}
+                     href={currentUrl.startsWith("http") ? currentUrl : `https://${currentUrl}`}
                      target="_blank"
                      rel="noreferrer"
                      className="text-blue-400 hover:underline"
                   >
-                     {currentUrl}
+                     {currentUrl.replace("https://", "").replace("http://", "")}
                   </a>
                </p>
                <button

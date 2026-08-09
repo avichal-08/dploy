@@ -4,7 +4,6 @@ import { TerminalSquare, ArrowRight, Terminal, Zap } from "lucide-react";
 export default function Home() {
    return (
       <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] font-sans selection:bg-blue-500/30 flex flex-col relative">
-
          <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272A_1px,transparent_1px),linear-gradient(to_bottom,#27272A_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 pointer-events-none" />
 
          <nav className="h-14 border-b border-[#27272A] bg-[#09090B] relative z-10 flex items-center px-6">
@@ -14,20 +13,26 @@ export default function Home() {
                   <span className="font-bold tracking-tight text-sm">DPLOY</span>
                </div>
 
-               <div className="flex items-center gap-6">
+               <div className="flex items-center gap-5 sm:gap-6">
                   <Link
-                     href="https://github.com"
+                     href="https://github.com/avichal-08/dploy"
                      target="_blank"
                      rel="noreferrer"
-                     className="text-sm font-medium text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
+                     className="text-sm font-medium text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors hidden sm:block"
                   >
                      GitHub
                   </Link>
                   <Link
-                     href="/project"
+                     href="/auth/login"
+                     className="text-sm font-medium text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
+                  >
+                     Log In
+                  </Link>
+                  <Link
+                     href="/auth/register"
                      className="text-sm font-medium bg-[#FAFAFA] text-[#09090B] px-3.5 py-1.5 rounded-md hover:bg-[#E4E4E7] transition-colors"
                   >
-                     Dashboard
+                     Sign Up
                   </Link>
                </div>
             </div>
@@ -35,7 +40,6 @@ export default function Home() {
 
          <main className="flex-1 flex flex-col items-center justify-center px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 mt-[-4rem]">
-
                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#111113] text-[#A1A1AA] text-xs font-medium border border-[#27272A] mb-4">
                   <Zap className="w-3.5 h-3.5 text-blue-500" />
                   <span>Dploy Engine v1.0 is now live</span>
@@ -51,20 +55,20 @@ export default function Home() {
                </p>
 
                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-                  <a
-                     href="/home"
+                  <Link
+                     href="/auth/register"
                      className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#FAFAFA] text-[#09090B] px-6 py-2.5 rounded-md font-medium text-sm hover:bg-[#E4E4E7] transition-colors"
                   >
-                     Create Project
+                     Get Started
                      <ArrowRight className="w-4 h-4" />
-                  </a>
-                  <a
-                     href="#features"
+                  </Link>
+                  <Link
+                     href="/home"
                      className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#111113] border border-[#27272A] text-[#FAFAFA] px-6 py-2.5 rounded-md font-medium text-sm hover:border-[#52525B] transition-colors"
                   >
                      <Terminal className="w-4 h-4 text-[#A1A1AA]" />
-                     View Documentation
-                  </a>
+                     Go to Dashboard
+                  </Link>
                </div>
             </div>
          </main>

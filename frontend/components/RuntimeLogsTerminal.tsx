@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Terminal, Clock, Copy, Check, RefreshCw } from "lucide-react";
-const API_BASE = "http://localhost:8080/api";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 export function RuntimeLogsTerminal({
    deploymentId,
@@ -28,6 +29,12 @@ export function RuntimeLogsTerminal({
                credentials: "include",
             },
          );
+
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          if (!res.ok) throw new Error("Failed to fetch runtime logs");
 
          const data = await res.json();

@@ -43,6 +43,11 @@ export function CustomDomainSettings({
             },
          );
 
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          const data = await res.json();
 
          if (!res.ok) {

@@ -1,30 +1,29 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
-	"context"
 
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/models"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserContextKey string
 
 const ContextUserID UserContextKey = "userID"
 
-type RegisterRequest struct {
-	Email    string `json:"email"`
-	GithubID string `json:"github_id"`
-}
-
-type LoginRequest struct {
-	Identifier string `json:"identifier"` // can be email || github-id
+type AuthPayload struct {
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	InviteCode string `json:"invite_code,omitempty"`
 }
 
 func setAuthCookie(w http.ResponseWriter, user models.User) error {
@@ -45,12 +44,14 @@ func setAuthCookie(w http.ResponseWriter, user models.User) error {
 		return err
 	}
 
+	isProd := os.Getenv("ENV") == "production"
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "dploy_session",
 		Value:    tokenString,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, //set true when deploy on a vps
+		Secure:   isProd,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   60 * 60 * 24 * 7,
 	})
@@ -59,27 +60,41 @@ func setAuthCookie(w http.ResponseWriter, user models.User) error {
 }
 
 func HandleRegister(w http.ResponseWriter, r *http.Request) {
-	var req RegisterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var payload AuthPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		WriteError(w, http.StatusBadRequest, "Invalid JSON payload")
 		return
 	}
 
-	if req.Email == "" || req.GithubID == "" {
-		WriteError(w, http.StatusBadRequest, "Email and Github ID are required to register")
+	payload.Email = strings.ToLower(strings.TrimSpace(payload.Email))
+
+	if payload.Email == "" || payload.Password == "" {
+		WriteError(w, http.StatusBadRequest, "Email and Password are required")
 		return
 	}
 
-	var existingUser models.User
-	if err := db.DB.Where("email = ? OR github_id = ?", req.Email, req.GithubID).First(&existingUser).Error; err == nil {
-		WriteError(w, http.StatusConflict, "A user with this Email or Github ID already exists")
+	requiredCode := os.Getenv("INVITE_CODE")
+	if requiredCode != "" && payload.InviteCode != requiredCode {
+		WriteError(w, http.StatusForbidden, "Invalid invite code. Registration is restricted.")
+		return
+	}
+
+	var count int64
+	db.DB.Model(&models.User{}).Where("email = ?", payload.Email).Count(&count)
+	if count > 0 {
+		WriteError(w, http.StatusConflict, "A user with this Email already exists")
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "Failed to secure password")
 		return
 	}
 
 	user := models.User{
-		Email:     req.Email,
-		GithubID:  req.GithubID,
-		CreatedAt: time.Now(),
+		Email:    payload.Email,
+		Password: string(hashedPassword),
 	}
 
 	if err := db.DB.Create(&user).Error; err != nil {
@@ -95,27 +110,33 @@ func HandleRegister(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusCreated, map[string]interface{}{
 		"message": "Registration successful",
 		"user": map[string]string{
-			"id":        user.ID,
-			"email":     user.Email,
-			"github_id": user.GithubID,
+			"id":    user.ID,
+			"email": user.Email,
 		},
 	})
 }
 
 func HandleLogin(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var payload AuthPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		WriteError(w, http.StatusBadRequest, "Invalid JSON payload")
 		return
 	}
 
-	if req.Identifier == "" {
-		WriteError(w, http.StatusBadRequest, "Email or Github ID is required to login")
+	payload.Email = strings.ToLower(strings.TrimSpace(payload.Email))
+
+	if payload.Email == "" || payload.Password == "" {
+		WriteError(w, http.StatusBadRequest, "Email and password are required")
 		return
 	}
 
 	var user models.User
-	if err := db.DB.Where("email = ? OR github_id = ?", req.Identifier, req.Identifier).First(&user).Error; err != nil {
+	if err := db.DB.Where("email = ?", payload.Email).First(&user).Error; err != nil {
+		WriteError(w, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password)); err != nil {
 		WriteError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
@@ -128,9 +149,8 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"message": "Login successful",
 		"user": map[string]string{
-			"id":        user.ID,
-			"email":     user.Email,
-			"github_id": user.GithubID,
+			"id":    user.ID,
+			"email": user.Email,
 		},
 	})
 }
@@ -141,7 +161,7 @@ func HandleLogout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   os.Getenv("ENV") == "production",
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})

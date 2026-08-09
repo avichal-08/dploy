@@ -26,6 +26,16 @@ export default function CreateProjectPage() {
 
    const [envs, setEnvs] = useState([{ key: "", value: "" }]);
 
+   useEffect(() => {
+      fetch(`${API_BASE}/user`, { credentials: "include" })
+         .then((res) => {
+            if (res.status === 401) {
+               window.location.href = "/auth/login";
+            }
+         })
+         .catch(console.error);
+   }, []);
+
    const handleAddEnv = () => setEnvs([...envs, { key: "", value: "" }]);
 
    const handleRemoveEnv = (index: number) => {
@@ -77,6 +87,11 @@ export default function CreateProjectPage() {
             credentials: "include",
          });
 
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          const text = await res.text();
          let data;
          try {
@@ -116,6 +131,11 @@ export default function CreateProjectPage() {
                },
             );
 
+            if (envRes.status === 401) {
+               window.location.href = "/auth/login";
+               return;
+            }
+
             if (!envRes.ok) {
                const errData = await envRes.json().catch(() => ({}));
                console.error("Failed to save environment variables:", errData);
@@ -141,7 +161,7 @@ export default function CreateProjectPage() {
             <div className="max-w-6xl w-full mx-auto flex items-center justify-between">
                <div
                   className="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80"
-                  onClick={() => router.push("/")}
+                  onClick={() => router.push("/home")}
                >
                   <TerminalSquare className="w-5 h-5 text-[#FAFAFA]" />
                   <span className="font-bold tracking-tight text-sm">
@@ -211,7 +231,7 @@ export default function CreateProjectPage() {
                               This will be used to generate your subdomain
                               (e.g.,{" "}
                               <span className="text-[#FAFAFA]">
-                                 {projectName || "project"}.localhost
+                                 {projectName || "project"}.dploy.avichal.me
                               </span>
                               ).
                            </p>

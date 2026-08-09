@@ -64,6 +64,12 @@ export default function ProjectOverviewClient({
          const res = await fetch(`${API_BASE}/project/${projectId}`, {
             credentials: "include",
          });
+
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          if (!res.ok) throw new Error("Project not found or failed to load");
          const data = await res.json();
          setProject(data);
@@ -80,6 +86,12 @@ export default function ProjectOverviewClient({
          const res = await fetch(`${API_BASE}/projects/${projectId}/envs`, {
             credentials: "include",
          });
+
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          if (res.ok) {
             const data = await res.json();
             setEnvs(data || []);
@@ -109,6 +121,11 @@ export default function ProjectOverviewClient({
             },
          );
 
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          if (!res.ok) {
             const text = await res.text();
             throw new Error(text || "Failed to rollback deployment");
@@ -137,6 +154,11 @@ export default function ProjectOverviewClient({
             ]),
             credentials: "include",
          });
+
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
 
          if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -168,6 +190,11 @@ export default function ProjectOverviewClient({
             credentials: "include",
          });
 
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          if (!res.ok) throw new Error("Failed to update environment variable");
          await fetchEnvs();
       } catch (err: any) {
@@ -181,6 +208,11 @@ export default function ProjectOverviewClient({
             method: "DELETE",
             credentials: "include",
          });
+
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
 
          if (!res.ok) throw new Error("Failed to delete environment variable");
          await fetchEnvs();
@@ -201,8 +233,13 @@ export default function ProjectOverviewClient({
             credentials: "include",
          });
 
+         if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return;
+         }
+
          if (!res.ok) throw new Error("Failed to delete project");
-         window.location.href = "/";
+         window.location.href = "/home";
       } catch (err: any) {
          alert(err.message);
          setIsDeletingProject(false);
@@ -279,7 +316,7 @@ export default function ProjectOverviewClient({
                   {error || "Project could not be found."}
                </p>
                <button
-                  onClick={() => (window.location.href = "/")}
+                  onClick={() => (window.location.href = "/home")}
                   className="bg-[#FAFAFA] text-[#09090B] px-4 py-2 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors mt-2"
                >
                   Back to Dashboard
@@ -298,10 +335,12 @@ export default function ProjectOverviewClient({
    const createdAt = project.CreatedAt || project.created_at;
    const activeDeployment =
       project.ActiveDeploymentID || project.active_deployment_id;
+
    const productionUrl =
       project.ProductionURL ||
       project.production_url ||
-      `${projectName}.localhost:8000`;
+      `https://${projectName}.dploy.avichal.me`;
+
    const customDomain = project.CustomDomain || project.custom_domain;
 
    const deployments = project.Deployments || project.deployments || [];
@@ -324,7 +363,7 @@ export default function ProjectOverviewClient({
       <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] font-sans antialiased selection:bg-blue-500/30 flex flex-col">
          <nav className="h-14 border-b border-[#27272A] bg-[#09090B] shrink-0 px-6 flex items-center gap-4 sticky top-0 z-10">
             <button
-               onClick={() => (window.location.href = "/")}
+               onClick={() => (window.location.href = "/home")}
                className="text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors flex items-center justify-center p-1"
             >
                <ArrowLeft className="w-4 h-4" />
@@ -347,12 +386,18 @@ export default function ProjectOverviewClient({
 
                      <div className="flex flex-wrap items-center gap-3 text-sm">
                         <a
-                           href={`${productionUrl}`}
+                           href={
+                              productionUrl.startsWith("http")
+                                 ? productionUrl
+                                 : `https://${productionUrl}`
+                           }
                            target="_blank"
                            rel="noreferrer"
                            className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors font-medium"
                         >
-                           {productionUrl}
+                           {productionUrl
+                              .replace("https://", "")
+                              .replace("http://", "")}
                            <ExternalLink className="w-3.5 h-3.5" />
                         </a>
 

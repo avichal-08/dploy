@@ -41,6 +41,12 @@ export default function DeploymentDetailsClient({
             const res = await fetch(`${API_BASE}/deployments/${deploymentId}`, {
                credentials: "include",
             });
+
+            if (res.status === 401) {
+               window.location.href = "/auth/login";
+               return;
+            }
+
             if (!res.ok)
                throw new Error("Deployment not found or failed to load");
 
@@ -260,58 +266,56 @@ export default function DeploymentDetailsClient({
                      Build Logs
                   </button>
 
-
-                        <button
-                           onClick={() => setLogType("runtime")}
-                           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
-                              logType === "runtime"
-                                 ? "border-[#FAFAFA] text-[#FAFAFA]"
-                                 : "border-transparent text-[#A1A1AA] hover:text-[#FAFAFA]"
-                           }`}
-                        >
-                           Runtime Logs
-                           <span className="flex h-2 w-2 relative">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                           </span>
-                        </button>
-
+                  <button
+                     onClick={() => setLogType("runtime")}
+                     className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+                        logType === "runtime"
+                           ? "border-[#FAFAFA] text-[#FAFAFA]"
+                           : "border-transparent text-[#A1A1AA] hover:text-[#FAFAFA]"
+                     }`}
+                  >
+                     Runtime Logs
+                     <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                     </span>
+                  </button>
                </div>
 
                {logType === "build" ? (
-                           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-md overflow-hidden flex flex-col h-[600px] shadow-sm">
-                               <div className="bg-[#111113] border-b border-[#27272A] px-4 py-2.5 flex items-center justify-between">
-                               <div className="flex items-center gap-2">
-                                   <Terminal className="w-4 h-4 text-[#A1A1AA]" />
-                                   <span className="text-xs font-mono text-[#A1A1AA] uppercase tracking-wider font-medium">Build Phase Output</span>
-                               </div>
-                               <button
-                                   onClick={handleCopyBuildLogs}
-                                   className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] transition-colors"
-                               >
-                                   {isCopied ? (
-                                   <>
-                                       <Check className="w-3.5 h-3.5 text-green-500" />
-                                       <span className="text-green-500">Copied!</span>
-                                   </>
-                                   ) : (
-                                   <>
-                                       <Copy className="w-3.5 h-3.5" />
-                                       Copy
-                                   </>
-                                   )}
-                               </button>
-                               </div>
+                  <div className="bg-[#0A0A0A] border border-[#27272A] rounded-md overflow-hidden flex flex-col h-[600px] shadow-sm">
+                     <div className="bg-[#111113] border-b border-[#27272A] px-4 py-2.5 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <Terminal className="w-4 h-4 text-[#A1A1AA]" />
+                           <span className="text-xs font-mono text-[#A1A1AA] uppercase tracking-wider font-medium">Build Phase Output</span>
+                        </div>
+                        <button
+                           onClick={handleCopyBuildLogs}
+                           className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] transition-colors"
+                        >
+                           {isCopied ? (
+                              <>
+                                 <Check className="w-3.5 h-3.5 text-green-500" />
+                                 <span className="text-green-500">Copied!</span>
+                              </>
+                           ) : (
+                              <>
+                                 <Copy className="w-3.5 h-3.5" />
+                                 Copy
+                              </>
+                           )}
+                        </button>
+                     </div>
 
-                               <div className="p-5 overflow-y-auto font-mono text-xs sm:text-sm flex-1 custom-scrollbar">
-                               <pre className="text-[#A1A1AA] leading-relaxed break-all whitespace-pre-wrap font-mono">
-                                   {buildLogs}
-                               </pre>
-                               </div>
-                           </div>
-                         ) : (
-                           <RuntimeLogsTerminal deploymentId={deploymentId} />
-                         )}
+                     <div className="p-5 overflow-y-auto font-mono text-xs sm:text-sm flex-1 custom-scrollbar">
+                        <pre className="text-[#A1A1AA] leading-relaxed break-all whitespace-pre-wrap font-mono">
+                           {buildLogs}
+                        </pre>
+                     </div>
+                  </div>
+               ) : (
+                  <RuntimeLogsTerminal deploymentId={deploymentId} />
+               )}
             </div>
          </main>
 
