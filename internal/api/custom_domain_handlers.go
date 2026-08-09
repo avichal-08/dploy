@@ -29,7 +29,7 @@ func HandleUpdateCustomDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.DB.Model(&project.CustomDomain).Update("custom_domain", domain).Error; err != nil {
+	if err := db.DB.Model(&project).Update("custom_domain", domain).Error; err != nil {
 		WriteError(w, http.StatusInternalServerError, "Failed to update custom domain")
 		return
 	}
