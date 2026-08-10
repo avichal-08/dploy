@@ -13,8 +13,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dploy",
-  description: "One stop solution for all your deployment operations",
+  metadataBase: new URL("https://dploy.avichal.me"),
+  title: {
+    default: "Dploy | Zero-Config PaaS",
+    template: "%s | Dploy",
+  },
+  description: "The self-hosted deployment engine built for high-velocity engineering teams. Push to main, automate container rollouts, and govern traffic.",
+  openGraph: {
+    title: "Dploy | Zero-Config PaaS",
+    description: "Ship your code from GitHub to production instantly in isolated containers.",
+    url: "https://dploy.avichal.me",
+    siteName: "Dploy",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dploy | Zero-Config PaaS",
+    description: "Ship your code from GitHub to production instantly in isolated containers.",
+    creator: "@Avichal_08",
+  },
 };
 
 export default function RootLayout({
