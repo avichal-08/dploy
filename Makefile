@@ -2,7 +2,7 @@
 DB_URL ?= postgresql://dploy_user:dploy_pass@localhost:5432/dploy_db?sslmode=disable
 REDIS_ADDR ?= localhost:6379
 
-.PHONY: help dev dev-api dev-worker dev-web build-api build-worker build-web clean migrate-up migrate-down migrate-create test logs
+.PHONY: help dev dev-api dev-worker dev-web build-api build-worker build-web clean migrate-up migrate-down migrate-create test logs test test-verbose test-coverage benchmark
 
 help:
    @echo "Dploy Makefile Commands:"
@@ -73,8 +73,6 @@ migrate-create:
    @echo "--> Creating new migration..."
    migrate create -ext sql -dir internal/db/migrations -seq $(name)
 
-
-
 clean:
    @echo "--> Cleaning up..."
    docker-compose down
@@ -83,3 +81,16 @@ clean:
 
 logs:
    docker-compose logs -f
+
+test:
+	go test ./...
+
+test-verbose:
+	go test -v ./...
+
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
+
+benchmark:
+	go test -bench=. -benchmem ./...
