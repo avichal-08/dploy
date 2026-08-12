@@ -19,9 +19,7 @@ func SetupTestDB() *gorm.DB {
 	os.Setenv("JWT_SECRET", "test-jwt-secret-key-12345")
 	os.Setenv("INVITE_CODE", "dploy-test-invite")
 
-	if err := godotenv.Load("../../.env.local"); err != nil {
-		panic("no .env file found")
-	}
+	_ = godotenv.Load("../../.env.local")
 
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn == "" {
