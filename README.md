@@ -335,8 +335,8 @@ and long-running deployment tasks do not block each other.
 
 ``` bash
 cd frontend
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 The Next.js dashboard will start in development mode.
