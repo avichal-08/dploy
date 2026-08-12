@@ -39,6 +39,27 @@ func GetReplicaConnectionCount(replicaID string) int32 {
 	return getActiveConns(replicaID)
 }
 
+func SelectLeastLoadedReplica(replicas []models.Replica) *models.Replica {
+	var selectedReplica *models.Replica
+	var minConns int32 = -1
+
+	for i := range replicas {
+		rep := &replicas[i]
+		if rep.InternalPort == 0 {
+			continue
+		}
+
+		conns := getActiveConns(rep.ID)
+
+		if minConns == -1 || conns < minConns {
+			minConns = conns
+			selectedReplica = rep
+		}
+	}
+
+	return selectedReplica
+}
+
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 	if idx := strings.Index(host, ":"); idx != -1 {
@@ -79,22 +100,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var selectedReplica *models.Replica
-	var minConns int32 = -1
-
-	for i := range route.Replicas {
-		rep := &route.Replicas[i]
-		if rep.InternalPort == 0 {
-			continue
-		}
-
-		conns := getActiveConns(rep.ID)
-
-		if minConns == -1 || conns < minConns {
-			minConns = conns
-			selectedReplica = rep
-		}
-	}
+	selectedReplica := SelectLeastLoadedReplica(route.Replicas)
 
 	if selectedReplica == nil {
 		http.Error(w, "Bad Gateway (502)", http.StatusBadGateway)

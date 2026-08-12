@@ -45,3 +45,52 @@ func TestHandleCreateProject(t *testing.T) {
 		require.Equal(t, user.ID, proj.UserID)
 	})
 }
+
+func TestHandleGetProjects(t *testing.T) {
+	testDB := testutils.SetupTestDB()
+	defer testutils.TeardownTestDB()
+
+	user := models.User{
+		ID:       "11111111-1111-1111-1111-111111111111",
+		Email:    "readonly@dploy.io",
+		Password: "hashedpassword",
+	}
+	testDB.Create(&user)
+
+	testDB.Create(&models.Project{
+		ID:            "22222222-2222-2222-2222-222222222222",
+		UserID:        user.ID,
+		Name:          "frontend-app",
+		RepositoryURL: "https://github.com/dev/frontend",
+		Status:        "deployed",
+	})
+	testDB.Create(&models.Project{
+		ID:            "33333333-3333-3333-3333-333333333333",
+		UserID:        user.ID,
+		Name:          "backend-api",
+		RepositoryURL: "https://github.com/dev/backend",
+		Status:        "deployed",
+	})
+
+	t.Run("Successfully Fetches User Projects", func(t *testing.T) {
+		req, rr := testutils.MakeJSONRequest("GET", "/api/projects", nil)
+		req.AddCookie(testutils.GenerateTestToken(user.ID, user.Email))
+
+		handler := api.AuthMiddleware(http.HandlerFunc(api.HandleGetProjects))
+		handler.ServeHTTP(rr, req)
+
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		var resp []map[string]interface{}
+		_ = json.NewDecoder(rr.Body).Decode(&resp)
+
+		require.Len(t, resp, 2)
+
+		var projectNames []string
+		for _, p := range resp {
+			projectNames = append(projectNames, p["Name"].(string))
+		}
+
+		require.ElementsMatch(t, []string{"frontend-app", "backend-api"}, projectNames)
+	})
+}

@@ -10,7 +10,7 @@ import (
 
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/golang-jwt/jwt/v5"
-
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -19,9 +19,13 @@ func SetupTestDB() *gorm.DB {
 	os.Setenv("JWT_SECRET", "test-jwt-secret-key-12345")
 	os.Setenv("INVITE_CODE", "dploy-test-invite")
 
+	if err := godotenv.Load("../../.env.local"); err != nil {
+		panic("no .env file found")
+	}
+
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn == "" {
-		dsn = "postgresql://neondb_owner:npg_LM74TuPjobpW@ep-curly-hall-aof9te4i-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+		panic("no db test url")
 	}
 
 	testDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
