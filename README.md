@@ -33,8 +33,6 @@ real-time deployment logs.
     the Next.js dashboard over WebSockets.
 -   **Docker-Based Orchestration** --- Uses the Docker Engine API to
     create, manage, scale, and replace application containers.
--   **Graceful Container Draining** --- Old replicas are drained after
-    new replicas become healthy, avoiding unnecessary connection drops.
 
 ------------------------------------------------------------------------
 
@@ -453,17 +451,13 @@ Existing users    New users
   v1              v2
    │
    ▼
-Connections finish
-   │
-   ▼
-Graceful drain
+Sleep for 2 seconds
    │
    ▼
 Remove v1
 ```
 
-This allows a new version to become active without unnecessarily
-interrupting existing connections.
+This allows a new version to become active without stopping v1 and then serving from v2.
 
 ------------------------------------------------------------------------
 
