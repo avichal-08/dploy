@@ -11,7 +11,6 @@ import (
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -26,13 +25,8 @@ func SetupTestDB() *gorm.DB {
 		panic("no db test url")
 	}
 
-	testDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("Failed to connect to Neon test branch: " + err.Error())
-	}
-
-	db.DB = testDB
-	return testDB
+	db.Init(dsn)
+	return db.DB
 }
 
 func TeardownTestDB() {

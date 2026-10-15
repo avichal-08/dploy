@@ -191,12 +191,6 @@ func HandleGitHubWebhook(asynqClient *asynq.Client) http.HandlerFunc {
 	}
 }
 
-func loadOwnedProject(r *http.Request) (models.Project, bool) {
-	var project models.Project
-	err := db.DB.First(&project, "id = ? AND user_id = ?", r.PathValue("id"), GetUserID(r)).Error
-	return project, err == nil
-}
-
 func HandleGetWebhook(w http.ResponseWriter, r *http.Request) {
 	project, ok := loadOwnedProject(r)
 	if !ok {

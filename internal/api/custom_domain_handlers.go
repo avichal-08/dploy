@@ -23,8 +23,8 @@ func HandleUpdateCustomDomain(w http.ResponseWriter, r *http.Request) {
 
 	domain := strings.ToLower(strings.TrimSpace(payload.CustomDomain))
 
-	var project models.Project
-	if err := db.DB.First(&project, "id = ?", projectID).Error; err != nil {
+	project, ok := findOwnedProject(projectID, GetUserID(r))
+	if !ok {
 		WriteError(w, http.StatusNotFound, "Project not found")
 		return
 	}

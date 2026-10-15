@@ -37,8 +37,8 @@ func HandleCreateDeployment(asynqClient *asynq.Client) http.HandlerFunc {
 			return
 		}
 
-		var project models.Project
-		if err := db.DB.First(&project, "id = ?", payload.ProjectID).Error; err != nil {
+		project, ok := findOwnedProject(payload.ProjectID, GetUserID(r))
+		if !ok {
 			WriteError(w, http.StatusNotFound, "Project not found")
 			return
 		}
@@ -74,9 +74,8 @@ func HandleGetDeployment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var deployment models.Deployment
-	if err := db.DB.First(&deployment, "id = ?", deploymentID).Error; err != nil {
-		slog.Error("failed to fetch deployment", "error", err, "deployment_id", deploymentID)
+	deployment, _, ok := findOwnedDeployment(deploymentID, GetUserID(r))
+	if !ok {
 		WriteError(w, http.StatusNotFound, "Deployment not found")
 		return
 	}
@@ -93,22 +92,14 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var deployment models.Deployment
-	if err := db.DB.First(&deployment, "id = ?", deploymentID).Error; err != nil {
-		slog.Error("failed to fetch deployment", "error", err, "deployment_id", deploymentID)
+	deployment, project, ok := findOwnedDeployment(deploymentID, GetUserID(r))
+	if !ok {
 		WriteError(w, http.StatusNotFound, "Deployment not found")
 		return
 	}
 
 	if deployment.Status != "success" {
 		WriteError(w, http.StatusBadRequest, "Cannot rollback to a failed or incomplete deployment")
-		return
-	}
-
-	var project models.Project
-	if err := db.DB.First(&project, "id = ?", deployment.ProjectID).Error; err != nil {
-		slog.Error("failed to fetch project for rollback", "error", err)
-		WriteError(w, http.StatusInternalServerError, "Project not found")
 		return
 	}
 
@@ -192,10 +183,9 @@ func HandleGetRuntimeLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var deployment models.Deployment
-	if err := db.DB.First(&deployment, "id = ?", deploymentID).Error; err != nil {
-		slog.Error("failed to fetch deployment for logs", "error", err, "deployment_id", deploymentID)
-		http.Error(w, "Deployment not found", http.StatusNotFound)
+	deployment, _, ok := findOwnedDeployment(deploymentID, GetUserID(r))
+	if !ok {
+		WriteError(w, http.StatusNotFound, "Deployment not found")
 		return
 	}
 

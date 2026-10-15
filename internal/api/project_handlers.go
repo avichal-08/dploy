@@ -74,8 +74,8 @@ func HandleGetProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var project models.Project
-	if err := db.DB.Preload("Deployments").First(&project, "id = ?", projectID).Error; err != nil {
+	project, ok := findOwnedProject(projectID, GetUserID(r), "Deployments")
+	if !ok {
 		WriteError(w, http.StatusNotFound, "Project not found")
 		return
 	}
@@ -90,7 +90,13 @@ func HandleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.DB.Delete(&models.Project{}, "id = ?", projectID).Error; err != nil {
+	project, ok := findOwnedProject(projectID, GetUserID(r))
+	if !ok {
+		WriteError(w, http.StatusNotFound, "Project not found")
+		return
+	}
+
+	if err := db.DB.Delete(&models.Project{}, "id = ? AND user_id = ?", project.ID, project.UserID).Error; err != nil {
 		WriteError(w, http.StatusInternalServerError, "Failed to delete project")
 		return
 	}
@@ -117,6 +123,12 @@ func HandleDomainNameUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	project, ok := findOwnedProject(projectID, GetUserID(r))
+	if !ok {
+		WriteError(w, http.StatusNotFound, "Project not found")
+		return
+	}
+
 	newName := strings.ToLower(strings.TrimSpace(payload.Name))
 
 	if !validNameRegex.MatchString(newName) {
@@ -128,12 +140,6 @@ func HandleDomainNameUpdate(w http.ResponseWriter, r *http.Request) {
 	db.DB.Model(&models.Project{}).Where("name = ?", newName).Count(&count)
 	if count > 0 {
 		WriteError(w, http.StatusConflict, "Project name is already taken")
-		return
-	}
-
-	var project models.Project
-	if err := db.DB.First(&project, "id = ?", projectID).Error; err != nil {
-		WriteError(w, http.StatusNotFound, "Project not found")
 		return
 	}
 

@@ -16,8 +16,8 @@ func HandleGetProjectMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var project models.Project
-	if err := db.DB.First(&project, "id = ?", projectID).Error; err != nil {
+	project, ok := findOwnedProject(projectID, GetUserID(r))
+	if !ok {
 		slog.Warn("project not found for metrics", "id", projectID)
 		WriteError(w, http.StatusNotFound, "Project not found")
 		return

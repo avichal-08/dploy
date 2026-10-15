@@ -3,14 +3,31 @@ package api
 import (
 	"context"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
+	CheckOrigin: allowedWebSocketOrigin,
+}
+
+func allowedWebSocketOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
 		return true
-	},
+	}
+	origins := os.Getenv("ALLOWED_ORIGINS")
+	if origins == "" {
+		origins = "http://localhost:3000"
+	}
+	for _, allowed := range strings.Split(origins, ",") {
+		if allowed = strings.TrimSpace(allowed); allowed != "" && strings.EqualFold(allowed, origin) {
+			return true
+		}
+	}
+	return false
 }
 
 type LogSubscriber interface {
@@ -22,6 +39,11 @@ func HandleLogStream(subscriber LogSubscriber) http.HandlerFunc {
 		deploymentID := r.PathValue("id")
 		if deploymentID == "" {
 			WriteError(w, http.StatusBadRequest, "Deployment ID is required")
+			return
+		}
+
+		if _, _, ok := findOwnedDeployment(deploymentID, GetUserID(r)); !ok {
+			WriteError(w, http.StatusNotFound, "Deployment not found")
 			return
 		}
 

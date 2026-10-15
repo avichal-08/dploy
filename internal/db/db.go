@@ -25,7 +25,7 @@ func Init(dsn string) {
 
 	//retry Loop (for neon cold starts)
 	for i := 0; i < 10; i++ {
-		DB, err = gorm.Open(postgres.Open(dsn))
+		DB, err = gorm.Open(postgres.New(postgres.Config{DSN: dsn, PreferSimpleProtocol: true}))
 		if err == nil {
 			sqlDB, err = DB.DB()
 			if err == nil {

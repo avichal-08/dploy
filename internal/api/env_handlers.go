@@ -21,6 +21,11 @@ func HandleGetEnvs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, ok := findOwnedProject(projectID, GetUserID(r)); !ok {
+		WriteError(w, http.StatusNotFound, "Project not found")
+		return
+	}
+
 	var envs []models.ProjectEnv
 	if err := db.DB.Where("project_id = ?", projectID).Order("created_at asc").Find(&envs).Error; err != nil {
 		WriteError(w, http.StatusInternalServerError, "Failed to fetch environment variables")
@@ -38,6 +43,11 @@ func HandleCreateEnvs(w http.ResponseWriter, r *http.Request) {
 	projectID := r.PathValue("id")
 	if projectID == "" {
 		WriteError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
+
+	if _, ok := findOwnedProject(projectID, GetUserID(r)); !ok {
+		WriteError(w, http.StatusNotFound, "Project not found")
 		return
 	}
 
@@ -83,6 +93,12 @@ func HandleUpdateEnv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	env, ok := findOwnedEnv(envID, GetUserID(r))
+	if !ok {
+		WriteError(w, http.StatusNotFound, "Environment variable not found")
+		return
+	}
+
 	var req EnvRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		WriteError(w, http.StatusBadRequest, "Invalid JSON payload")
@@ -95,7 +111,7 @@ func HandleUpdateEnv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := db.DB.Model(&models.ProjectEnv{ID: envID}).Updates(map[string]interface{}{
+	err := db.DB.Model(&models.ProjectEnv{ID: env.ID}).Updates(map[string]interface{}{
 		"key":   req.Key,
 		"value": req.Value,
 	}).Error
@@ -119,7 +135,13 @@ func HandleDeleteEnv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.DB.Delete(&models.ProjectEnv{ID: envID}).Error; err != nil {
+	env, ok := findOwnedEnv(envID, GetUserID(r))
+	if !ok {
+		WriteError(w, http.StatusNotFound, "Environment variable not found")
+		return
+	}
+
+	if err := db.DB.Delete(&models.ProjectEnv{ID: env.ID}).Error; err != nil {
 		WriteError(w, http.StatusInternalServerError, "Failed to delete environment variable")
 		return
 	}
