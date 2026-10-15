@@ -44,6 +44,7 @@ services:
          - REDIS_ADDR=redis:6379
          - PORT=${API_PORT}
          - JWT_SECRET=${JWT_SECRET}
+         - INVITE_CODE=${INVITE_CODE:?INVITE_CODE must be set in .env}
          - S3_ACCESS_KEY=${S3_ACCESS_KEY}
          - S3_SECRET_KEY=${S3_SECRET_KEY}
          - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}

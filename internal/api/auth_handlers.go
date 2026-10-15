@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -59,6 +60,25 @@ func setAuthCookie(w http.ResponseWriter, user models.User) error {
 	return nil
 }
 
+var (
+	errRegistrationDisabled = errors.New("Registration is currently disabled.")
+	errInvalidInviteCode    = errors.New("Invalid invite code. Registration is restricted.")
+)
+
+// checkInviteCode fails closed: if INVITE_CODE is not configured, nobody can
+// register, so a missing env var can never silently open sign-ups.
+func checkInviteCode(provided string) error {
+	required := strings.TrimSpace(os.Getenv("INVITE_CODE"))
+	if required == "" {
+		slog.Warn("registration attempted but INVITE_CODE is not set; rejecting")
+		return errRegistrationDisabled
+	}
+	if subtle.ConstantTimeCompare([]byte(strings.TrimSpace(provided)), []byte(required)) != 1 {
+		return errInvalidInviteCode
+	}
+	return nil
+}
+
 func HandleRegister(w http.ResponseWriter, r *http.Request) {
 	var payload AuthPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -73,9 +93,8 @@ func HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requiredCode := os.Getenv("INVITE_CODE")
-	if requiredCode != "" && payload.InviteCode != requiredCode {
-		WriteError(w, http.StatusForbidden, "Invalid invite code. Registration is restricted.")
+	if err := checkInviteCode(payload.InviteCode); err != nil {
+		WriteError(w, http.StatusForbidden, err.Error())
 		return
 	}
 
