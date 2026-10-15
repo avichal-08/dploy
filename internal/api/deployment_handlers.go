@@ -104,6 +104,8 @@ func HandleGetDeployment(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, deployment)
 }
 
+const rollbackReadyTimeout = 20 * time.Second
+
 func HandleRollback(w http.ResponseWriter, r *http.Request) {
 	deploymentID := r.PathValue("id")
 	if deploymentID == "" {
@@ -160,23 +162,29 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	internalPort, _ := strconv.Atoi(portStr)
+	db.DB.Model(&replica).Updates(map[string]interface{}{
+		"container_id":  containerID,
+		"internal_port": internalPort,
+	})
+
+	if err := pipeline.WaitForReplicaReady(containerID, internalPort, min(pipeline.ReadyTimeoutFromEnv(), rollbackReadyTimeout)); err != nil {
+		slog.Error("rollback replica never became ready", "deployment_id", deployment.ID, "error", err)
+		pipeline.StopAndRemoveContainer(containerID)
+		db.DB.Model(&replica).Update("status", "failed")
+		WriteError(w, http.StatusBadGateway, "The rollback version did not pass its health check; the current version is still serving")
+		return
+	}
 
 	var oldDeploymentID string
 	if project.ActiveDeploymentID != nil {
 		oldDeploymentID = *project.ActiveDeploymentID
 	}
 
+	db.DB.Model(&replica).Update("status", "healthy")
+
 	db.DB.Model(&models.Project{ID: project.ID}).Updates(map[string]interface{}{
 		"active_deployment_id": deployment.ID,
 		"status":               "deployed",
-	})
-
-	proxy.CacheManager.Invalidate(project.Name)
-
-	db.DB.Model(&replica).Updates(map[string]interface{}{
-		"container_id":  containerID,
-		"internal_port": internalPort,
-		"status":        "healthy",
 	})
 
 	db.DB.Model(&models.Deployment{ID: deployment.ID}).Updates(map[string]interface{}{
@@ -184,26 +192,14 @@ func HandleRollback(w http.ResponseWriter, r *http.Request) {
 		"internal_port": internalPort,
 	})
 
-	proxy.CacheManager.WarmCache(project.Name, deployment.ID, "docker", "", []models.Replica{replica})
+	proxy.CacheManager.Invalidate(project.Name)
 
 	slog.Info("traffic successfully routed to rollback deployment", "deployment_id", deployment.ID)
 
 	if oldDeploymentID != "" && oldDeploymentID != deployment.ID {
-		go func(oldID string) {
-			var oldReplicas []models.Replica
-			if err := db.DB.Where("deployment_id = ? AND status != ?", oldID, "terminated").Find(&oldReplicas).Error; err == nil {
-				time.Sleep(2 * time.Second)
-
-				for _, oldRep := range oldReplicas {
-					db.DB.Model(&oldRep).Update("status", "terminating")
-					if oldRep.ContainerID != "" {
-						pipeline.StopAndRemoveContainer(oldRep.ContainerID)
-						slog.Info("cleaned up old replica after rollback", "container_id", oldRep.ContainerID)
-					}
-					db.DB.Model(&oldRep).Update("status", "terminated")
-				}
-			}
-		}(oldDeploymentID)
+		if err := pipeline.MarkDeploymentDraining(oldDeploymentID); err != nil {
+			slog.Error("failed to mark previous deployment for draining", "deployment_id", oldDeploymentID, "error", err)
+		}
 	}
 
 	WriteJSON(w, http.StatusOK, map[string]string{"message": "Rollback successful", "new_container_id": containerID})

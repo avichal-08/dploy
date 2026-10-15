@@ -17,6 +17,7 @@ func StartOrchestrator(ctx context.Context) {
 				return
 			case <-ticker.C:
 				Reconcile()
+				Drain()
 				Autoscale()
 			}
 		}

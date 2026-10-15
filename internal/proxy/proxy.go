@@ -39,6 +39,14 @@ func GetReplicaConnectionCount(replicaID string) int32 {
 	return getActiveConns(replicaID)
 }
 
+func ReplicaBaseURL(hostPort int) string {
+	host := os.Getenv("REPLICA_HOST")
+	if host == "" {
+		host = "host.docker.internal"
+	}
+	return fmt.Sprintf("http://%s:%d", host, hostPort)
+}
+
 func SelectLeastLoadedReplica(replicas []models.Replica) *models.Replica {
 	var selectedReplica *models.Replica
 	var minConns int32 = -1
@@ -110,8 +118,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	incConn(selectedReplica.ID)
 	defer decConn(selectedReplica.ID)
 
-	targetStr := fmt.Sprintf("http://host.docker.internal:%d", selectedReplica.InternalPort)
-	targetURL, err := url.Parse(targetStr)
+	targetURL, err := url.Parse(ReplicaBaseURL(selectedReplica.InternalPort))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

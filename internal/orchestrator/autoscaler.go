@@ -129,19 +129,27 @@ func provisionReplica(deploymentID string, projectID string) {
 
 	internalPort, _ := strconv.Atoi(portStr)
 	db.DB.Model(&replica).Updates(map[string]interface{}{
-		"status":        "healthy",
 		"container_id":  containerID,
 		"internal_port": internalPort,
 		"updated_at":    time.Now(),
 	})
+
+	promoteWhenReady(replica.ID, projectID, containerID, internalPort, func(err error) {
+		slog.Error("autoscaled replica never became ready", "replica_id", replica.ID, "error", err)
+		pipeline.StopAndRemoveContainer(containerID)
+		db.DB.Model(&models.Replica{}).Where("id = ?", replica.ID).Update("status", "failed")
+	})
+}
+
+func promoteWhenReady(replicaID, projectID, containerID string, hostPort int, onFail func(error)) {
+	if err := pipeline.WaitForReplicaReady(containerID, hostPort, pipeline.ReadyTimeoutFromEnv()); err != nil {
+		onFail(err)
+		return
+	}
+	db.DB.Model(&models.Replica{}).Where("id = ? AND status = ?", replicaID, "starting").Update("status", "healthy")
+	invalidateProjectRoute(projectID)
 }
 
 func terminateReplica(replica models.Replica) {
-	db.DB.Model(&replica).Update("status", "terminating")
-	// this allows in-flight requests to finish processing within 5 seconds before the container is stopped
-	time.Sleep(5 * time.Second)
-
-	pipeline.StopAndRemoveContainer(replica.ContainerID)
-
-	db.DB.Model(&replica).Update("status", "terminated")
+	db.DB.Model(&models.Replica{}).Where("id = ? AND status = ?", replica.ID, "healthy").Update("status", "draining")
 }

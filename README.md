@@ -438,10 +438,11 @@ Instead of immediately terminating the previous deployment:
 Deploy v2
    │
    ▼
-Start v2
-   │
+Start v2 ──► health check: wait until v2 answers HTTP (READY_TIMEOUT, default 60s)
+   │              │
+   │              └─ never ready? deploy fails, v2 is removed, v1 keeps serving
    ▼
-Route new requests → v2
+Route new requests → v2, mark v1 "draining"
    │
    ├───────────────┐
    │               │
@@ -451,13 +452,16 @@ Existing users    New users
   v1              v2
    │
    ▼
-Sleep for 2 seconds
+Wait until v1 has 0 open connections (DRAIN_TIMEOUT, default 60s)
    │
    ▼
 Remove v1
 ```
 
-This allows a new version to become active without stopping v1 and then serving from v2.
+The health check runs wherever the replica is started (worker for deploys,
+API for rollbacks, scale-ups and self-healing). Draining always happens in the
+API process, because that is where the reverse proxy tracks live connections
+per replica. Scale-downs use the same drain path.
 
 ------------------------------------------------------------------------
 

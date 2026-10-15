@@ -13,7 +13,6 @@ import (
 	"github.com/avichal-08/dploy/internal/db"
 	"github.com/avichal-08/dploy/internal/helper"
 	"github.com/avichal-08/dploy/internal/models"
-	"github.com/avichal-08/dploy/internal/proxy"
 )
 
 func RunDeployment(project models.Project, deployment models.Deployment, logWriter io.Writer) {
@@ -136,8 +135,28 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 	db.DB.Model(&replica).Updates(map[string]interface{}{
 		"container_id":  containerID,
 		"internal_port": internalPort,
-		"status":        "healthy",
 	})
+
+	logWriter.Write([]byte(fmt.Sprintf("--> Waiting for the app to answer HTTP on port %d...\n", internalPort)))
+	if err := WaitForReplicaReady(containerID, internalPort, ReadyTimeoutFromEnv()); err != nil {
+		slog.Error("replica never became ready", "deployment_id", deployment.ID, "error", err)
+		appLogs := ContainerLogsTail(containerID, 50)
+		logWriter.Write([]byte("--> Health check failed: " + err.Error() + "\n" + appLogs))
+		StopAndRemoveContainer(containerID)
+		db.DB.Model(&replica).Update("status", "failed")
+		db.DB.Model(&models.Deployment{ID: deployment.ID}).Updates(map[string]interface{}{
+			"status":      "failed",
+			"build_logs":  finalLogs + "\n--- HEALTH CHECK ---\n" + err.Error() + "\n" + appLogs,
+			"finished_at": time.Now(),
+		})
+		if project.ActiveDeploymentID == nil || *project.ActiveDeploymentID == "" {
+			db.DB.Model(&models.Project{ID: project.ID}).Update("status", "failed")
+		}
+		return
+	}
+
+	db.DB.Model(&replica).Update("status", "healthy")
+	logWriter.Write([]byte("--> App is healthy. Switching traffic...\n"))
 
 	baseDomain := os.Getenv("BASE_DOMAIN")
 	baseDomainProtocol := os.Getenv("BASE_DOMAIN_PROTOCOL")
@@ -153,8 +172,6 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"production_url":       productionURL,
 	})
 
-	proxy.CacheManager.Invalidate(project.Name)
-
 	db.DB.Model(&models.Deployment{ID: deployment.ID}).Updates(map[string]interface{}{
 		"status":        "success",
 		"container_id":  containerID,
@@ -163,31 +180,13 @@ func RunDeployment(project models.Project, deployment models.Deployment, logWrit
 		"finished_at":   time.Now(),
 	})
 
-	proxy.CacheManager.WarmCache(project.Name, deployment.ID, "docker", "", []models.Replica{replica})
-
 	slog.Info("traffic safely routed to new deployment", "deployment_id", deployment.ID, "internal_port", internalPort)
 
-	var oldDeploymentID string
-	if project.ActiveDeploymentID != nil {
-		oldDeploymentID = *project.ActiveDeploymentID
-	}
-
-	if oldDeploymentID != "" && oldDeploymentID != deployment.ID {
-		var oldReplicas []models.Replica
-		if err := db.DB.Where("deployment_id = ? AND status != ?", oldDeploymentID, "terminated").Find(&oldReplicas).Error; err == nil {
-			time.Sleep(2 * time.Second)
-
-			for _, oldRep := range oldReplicas {
-				db.DB.Model(&oldRep).Update("status", "terminating")
-				if oldRep.ContainerID != "" {
-					if err := StopAndRemoveContainer(oldRep.ContainerID); err != nil {
-						slog.Warn("failed to cleanup old replica", "container", oldRep.ContainerID, "error", err)
-					} else {
-						slog.Info("gracefully destroyed old replica", "container", oldRep.ContainerID)
-					}
-				}
-				db.DB.Model(&oldRep).Update("status", "terminated")
-			}
+	if project.ActiveDeploymentID != nil && *project.ActiveDeploymentID != "" && *project.ActiveDeploymentID != deployment.ID {
+		if err := MarkDeploymentDraining(*project.ActiveDeploymentID); err != nil {
+			slog.Error("failed to mark previous deployment for draining", "deployment_id", *project.ActiveDeploymentID, "error", err)
+		} else {
+			logWriter.Write([]byte("--> Previous version is draining its open connections.\n"))
 		}
 	}
 

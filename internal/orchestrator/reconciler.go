@@ -74,11 +74,23 @@ func checkAndHealReplica(replica models.Replica) {
 				})
 			} else {
 				internalPort, _ := strconv.Atoi(portStr)
-				slog.Info("orchestrator successfully healed replica", "replica_id", replica.ID)
+				slog.Info("orchestrator respawned replica, waiting for it to become ready", "replica_id", replica.ID)
 				db.DB.Model(&replica).Updates(map[string]interface{}{
-					"status":        "healthy",
+					"status":        "starting",
 					"container_id":  newContainerID,
 					"internal_port": internalPort,
+				})
+
+				restarts := replica.RestartCount + 1
+				go promoteWhenReady(replica.ID, replica.ProjectID, newContainerID, internalPort, func(err error) {
+					slog.Warn("respawned replica never became ready", "replica_id", replica.ID, "error", err)
+					db.DB.Model(&models.Replica{}).
+						Where("id = ? AND status = ?", replica.ID, "starting").
+						Updates(map[string]interface{}{
+							"status":        "crashed",
+							"last_crash_at": time.Now(),
+							"restart_count": restarts,
+						})
 				})
 			}
 		}
