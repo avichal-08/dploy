@@ -2,6 +2,9 @@ package models
 
 import (
 	"time"
+
+	"github.com/avichal-08/dploy/internal/secrets"
+	"gorm.io/gorm"
 )
 
 type User struct {
@@ -42,6 +45,32 @@ type ProjectEnv struct {
 	Key       string    `gorm:"not null;type:varchar(255)"`
 	Value     string    `gorm:"not null;type:text"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
+}
+
+func (e *ProjectEnv) BeforeSave(tx *gorm.DB) error {
+	enc, err := secrets.Encrypt(e.Value)
+	if err != nil {
+		return err
+	}
+	e.Value = enc
+	return nil
+}
+
+func (e *ProjectEnv) AfterSave(tx *gorm.DB) error {
+	return e.decrypt()
+}
+
+func (e *ProjectEnv) AfterFind(tx *gorm.DB) error {
+	return e.decrypt()
+}
+
+func (e *ProjectEnv) decrypt() error {
+	plain, err := secrets.Decrypt(e.Value)
+	if err != nil {
+		return err
+	}
+	e.Value = plain
+	return nil
 }
 
 type Deployment struct {

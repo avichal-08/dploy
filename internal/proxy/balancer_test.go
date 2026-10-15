@@ -1,9 +1,9 @@
 package proxy
 
 import (
-	"testing"
 	"github.com/avichal-08/dploy/internal/models"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func clearConnections() {

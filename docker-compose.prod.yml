@@ -47,6 +47,8 @@ services:
          - INVITE_CODE=${INVITE_CODE:?INVITE_CODE must be set in .env}
          - READY_TIMEOUT=${READY_TIMEOUT:-60s}
          - DRAIN_TIMEOUT=${DRAIN_TIMEOUT:-60s}
+         - ENV_ENCRYPTION_KEY=${ENV_ENCRYPTION_KEY:?ENV_ENCRYPTION_KEY must be set in .env}
+         - TRUST_PROXY_HEADERS=true
          - S3_ACCESS_KEY=${S3_ACCESS_KEY}
          - S3_SECRET_KEY=${S3_SECRET_KEY}
          - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
@@ -78,6 +80,7 @@ services:
          - BASE_DOMAIN=${BASE_DOMAIN}
          - BASE_DOMAIN_PROTOCOL=${BASE_DOMAIN_PROTOCOL}
          - READY_TIMEOUT=${READY_TIMEOUT:-60s}
+         - ENV_ENCRYPTION_KEY=${ENV_ENCRYPTION_KEY:?ENV_ENCRYPTION_KEY must be set in .env}
       volumes:
          - /var/run/docker.sock:/var/run/docker.sock
          - ./dploy-clones:/app/dploy-clones

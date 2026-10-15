@@ -11,6 +11,7 @@ import (
 	"github.com/avichal-08/dploy/internal/helper"
 	"github.com/avichal-08/dploy/internal/models"
 	"github.com/avichal-08/dploy/internal/pipeline"
+	"github.com/avichal-08/dploy/internal/secrets"
 	"github.com/avichal-08/dploy/internal/tasks"
 	"github.com/avichal-08/dploy/internal/worker"
 	"github.com/hibiken/asynq"
@@ -21,6 +22,10 @@ import (
 func main() {
 	godotenv.Load()
 	db.Init(os.Getenv("DATABASE_URL"))
+	if err := secrets.Init(); err != nil {
+		slog.Error("invalid ENV_ENCRYPTION_KEY", "error", err)
+		os.Exit(1)
+	}
 
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {

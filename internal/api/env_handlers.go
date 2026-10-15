@@ -111,10 +111,9 @@ func HandleUpdateEnv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := db.DB.Model(&models.ProjectEnv{ID: env.ID}).Updates(map[string]interface{}{
-		"key":   req.Key,
-		"value": req.Value,
-	}).Error
+	env.Key = req.Key
+	env.Value = req.Value
+	err := db.DB.Save(&env).Error
 
 	if err != nil {
 		if strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "unique") {

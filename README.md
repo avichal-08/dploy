@@ -295,6 +295,22 @@ configured, including:
 
 > Never commit real secrets or production credentials to the repository.
 
+`ENV_ENCRYPTION_KEY` encrypts project environment variables at rest
+(AES-256-GCM). It must be 32 random bytes, base64 or hex encoded:
+
+``` bash
+openssl rand -base64 32
+```
+
+It is required by `docker-compose.prod.yml`; locally it is optional and values
+are stored in plaintext without it. On startup the API encrypts any existing
+plaintext values. Keep the key safe: losing it makes stored variables
+unreadable.
+
+Login and registration are rate limited per client IP. Set
+`TRUST_PROXY_HEADERS=true` only when the API sits behind a proxy that sets
+`X-Forwarded-For` (the production compose file does this for Caddy).
+
 ------------------------------------------------------------------------
 
 ### 3. Start Infrastructure

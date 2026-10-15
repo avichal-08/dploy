@@ -17,6 +17,7 @@ import (
 	"github.com/avichal-08/dploy/internal/orchestrator"
 	"github.com/avichal-08/dploy/internal/proxy"
 	"github.com/avichal-08/dploy/internal/pubsub"
+	"github.com/avichal-08/dploy/internal/secrets"
 
 	"github.com/hibiken/asynq"
 	"github.com/joho/godotenv"
@@ -38,6 +39,21 @@ func main() {
 	}
 
 	db.Init(dsn)
+
+	if err := secrets.Init(); err != nil {
+		slog.Error("invalid ENV_ENCRYPTION_KEY", "error", err)
+		os.Exit(1)
+	}
+	if secrets.Enabled() {
+		if n, err := db.EncryptPlaintextEnvs(); err != nil {
+			slog.Error("failed to encrypt existing environment variables", "error", err)
+			os.Exit(1)
+		} else if n > 0 {
+			slog.Info("encrypted existing environment variables", "count", n)
+		}
+	} else {
+		slog.Warn("ENV_ENCRYPTION_KEY is not set; project environment variables are stored in plaintext")
+	}
 	s3Client, err := helper.NewS3Client("http://minio:9000", os.Getenv("S3_ACCESS_KEY"), os.Getenv("S3_SECRET_KEY"))
 	if err != nil {
 		slog.Error("Failed to initialize S3 client", "error", err)
@@ -58,8 +74,11 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /api/auth/register", api.HandleRegister)
-	mux.HandleFunc("POST /api/auth/login", api.HandleLogin)
+	loginLimiter := api.NewIPRateLimiter(6*time.Second, 10)
+	registerLimiter := api.NewIPRateLimiter(12*time.Minute, 5)
+
+	mux.HandleFunc("POST /api/auth/register", registerLimiter.Limit(api.HandleRegister))
+	mux.HandleFunc("POST /api/auth/login", loginLimiter.Limit(api.HandleLogin))
 	mux.HandleFunc("POST /api/auth/logout", api.HandleLogout)
 
 	mux.HandleFunc("GET /api/user", api.AuthMiddleware(api.HandleGetUser))
