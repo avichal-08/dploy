@@ -25,10 +25,10 @@ export const metadata: Metadata = {
     default: "Dploy | Zero-Config PaaS",
     template: "%s | Dploy",
   },
-  description: "The self-hosted deployment engine built for high-velocity engineering teams. Push to main, automate container rollouts, and govern traffic.",
+  description: "dploy is a self-hosted PaaS written in Go. It builds your Git repo into containers, rolls out new versions with zero downtime, and routes every request to the least-loaded replica.",
   openGraph: {
     title: "Dploy | Zero-Config PaaS",
-    description: "Ship your code from GitHub to production instantly in isolated containers.",
+    description: "Deploy all day. Drop zero requests. A self-hosted PaaS in Go with zero-downtime rollouts and least-connections routing.",
     url: "https://dploy.avichal.me",
     siteName: "Dploy",
     locale: "en_US",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Dploy | Zero-Config PaaS",
-    description: "Ship your code from GitHub to production instantly in isolated containers.",
+    description: "Deploy all day. Drop zero requests. A self-hosted PaaS in Go with zero-downtime rollouts and least-connections routing.",
     creator: "@Avichal_08",
   },
 };
