@@ -28,16 +28,16 @@ function CopyField({ label, value, secret }: { label: string; value: string; sec
 
    return (
       <div className="flex flex-col space-y-2">
-         <label className="text-xs font-medium text-[#A1A1AA]">{label}</label>
+         <label className="text-xs font-medium text-mute">{label}</label>
          <div className="flex items-center gap-2">
-            <code className="flex-1 min-w-0 truncate bg-[#09090B] border border-[#27272A] rounded px-3 py-2 text-sm text-[#FAFAFA] font-mono">
+            <code className="flex-1 min-w-0 truncate bg-ink border border-hair-strong rounded px-3 py-2 text-sm text-fg font-mono">
                {revealed ? value : "•".repeat(32)}
             </code>
             {secret && (
                <button
                   type="button"
                   onClick={() => setRevealed((r) => !r)}
-                  className="p-2 rounded border border-[#27272A] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#18181B] transition-colors"
+                  className="p-2 rounded border border-hair-strong text-mute hover:text-fg hover:bg-panel-2 transition-colors"
                   aria-label={revealed ? "Hide secret" : "Show secret"}
                >
                   {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -46,10 +46,10 @@ function CopyField({ label, value, secret }: { label: string; value: string; sec
             <button
                type="button"
                onClick={copy}
-               className="p-2 rounded border border-[#27272A] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#18181B] transition-colors"
+               className="p-2 rounded border border-hair-strong text-mute hover:text-fg hover:bg-panel-2 transition-colors"
                aria-label={`Copy ${label}`}
             >
-               {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+               {copied ? <Check className="w-4 h-4 text-ok" /> : <Copy className="w-4 h-4" />}
             </button>
          </div>
       </div>
@@ -119,18 +119,18 @@ export function GitHubWebhookSettings({ projectId, repositoryUrl }: GitHubWebhoo
    const isGitHub = /github\.com/i.test(repositoryUrl);
 
    return (
-      <div className="bg-[#111113] border border-[#27272A] rounded-md p-6 text-[#FAFAFA] w-full">
+      <div className="bg-panel border border-hair-strong rounded-xl p-6 text-fg w-full">
          <div className="flex items-center gap-2 mb-2">
-            <GitBranch className="w-5 h-5 text-[#A1A1AA]" />
+            <GitBranch className="w-5 h-5 text-mute" />
             <h2 className="text-xl font-semibold">Deploy on Push</h2>
          </div>
-         <p className="text-[#A1A1AA] text-sm mb-6">
+         <p className="text-mute text-sm mb-6">
             Add a GitHub webhook and every push to your repository&apos;s default branch deploys automatically.
             Pushes to other branches and tags are ignored.
          </p>
 
          {loading && (
-            <div className="flex items-center gap-2 text-sm text-[#A1A1AA]">
+            <div className="flex items-center gap-2 text-sm text-mute">
                <Loader2 className="w-4 h-4 animate-spin" /> Loading webhook settings...
             </div>
          )}
@@ -144,9 +144,9 @@ export function GitHubWebhookSettings({ projectId, repositoryUrl }: GitHubWebhoo
                <CopyField label="Payload URL" value={`${API_BASE}${webhook.path}`} />
                <CopyField label="Secret" value={webhook.secret} secret />
 
-               <div className="bg-[#09090B] p-4 rounded-md border border-[#27272A] space-y-2">
-                  <h3 className="text-sm font-medium text-[#FAFAFA]">Set it up on GitHub</h3>
-                  <ol className="list-decimal pl-5 space-y-1 text-xs text-[#A1A1AA]">
+               <div className="bg-ink p-4 rounded-md border border-hair-strong space-y-2">
+                  <h3 className="text-sm font-medium text-fg">Set it up on GitHub</h3>
+                  <ol className="list-decimal pl-5 space-y-1 text-xs text-mute">
                      <li>
                         Open{" "}
                         {isGitHub ? (
@@ -154,32 +154,32 @@ export function GitHubWebhookSettings({ projectId, repositoryUrl }: GitHubWebhoo
                               href={repoSettingsUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[#FAFAFA] underline underline-offset-2 hover:text-white"
+                              className="text-fg underline underline-offset-2 hover:text-white"
                            >
                               Settings → Webhooks → Add webhook
                            </a>
                         ) : (
-                           <span className="text-[#FAFAFA]">Settings → Webhooks → Add webhook</span>
+                           <span className="text-fg">Settings → Webhooks → Add webhook</span>
                         )}{" "}
                         in your repository.
                      </li>
                      <li>Paste the Payload URL and Secret above.</li>
                      <li>
-                        Set Content type to <code className="text-[#FAFAFA]">application/json</code>.
+                        Set Content type to <code className="text-fg">application/json</code>.
                      </li>
                      <li>
-                        Choose <span className="text-[#FAFAFA]">Just the push event</span> and save. GitHub sends a
+                        Choose <span className="text-fg">Just the push event</span> and save. GitHub sends a
                         ping, which should show a green check.
                      </li>
                   </ol>
                </div>
 
-               <div className="flex justify-end items-center pt-4 border-t border-[#27272A] mt-6">
+               <div className="flex justify-end items-center pt-4 border-t border-hair-strong mt-6">
                   <button
                      type="button"
                      onClick={rotate}
                      disabled={rotating}
-                     className="border border-[#27272A] text-[#FAFAFA] px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#18181B] transition-colors flex items-center gap-2 text-sm"
+                     className="border border-hair-strong text-fg px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-panel-2 transition-colors flex items-center gap-2 text-sm"
                   >
                      {rotating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                      {rotating ? "Rotating..." : "Rotate secret"}

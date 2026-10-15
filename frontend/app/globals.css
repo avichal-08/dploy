@@ -33,9 +33,36 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #09090b;
+  color: #f3f2ee;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: rgb(255 107 44 / 0.35);
+  color: #fff;
+}
+
+@utility ui-card {
+  @apply rounded-xl border border-hair-strong bg-panel;
+}
+@utility ui-label {
+  @apply block text-xs font-medium text-mute;
+}
+@utility ui-input {
+  @apply w-full rounded-lg border border-hair-strong bg-ink px-3 py-2 text-sm text-fg outline-none transition placeholder:text-faint focus:border-signal/60 focus:ring-2 focus:ring-signal/15;
+}
+@utility ui-btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility ui-btn-primary {
+  @apply ui-btn bg-fg text-ink hover:bg-white;
+}
+@utility ui-btn-accent {
+  @apply ui-btn bg-signal text-black shadow-[0_0_0_1px_rgba(255,107,44,0.6),0_10px_30px_-10px_rgba(255,107,44,0.6),inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110;
+}
+@utility ui-btn-ghost {
+  @apply ui-btn border border-hair-strong bg-white/[0.03] text-fg hover:bg-white/[0.07];
 }
 
 /* ---------- Landing ---------- */

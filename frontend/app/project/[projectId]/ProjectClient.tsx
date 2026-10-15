@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-   ArrowLeft,
    ExternalLink,
    GitBranch,
    Terminal,
@@ -26,6 +25,7 @@ import {
    BarChart3,
 } from "lucide-react";
 
+import { AppHeader } from "@/components/app/AppHeader";
 import { MetricsTab } from "@/components/MetricsTab";
 import { DomainSettings } from "@/components/DomainSettings";
 import { CustomDomainSettings } from "@/components/CustomDomainSettings";
@@ -253,11 +253,11 @@ export default function ProjectOverviewClient({
          case "deployed":
          case "success":
          case "running":
-            return "text-green-500 bg-green-500/10 border-green-500/20";
+            return "text-ok bg-ok/10 border-ok/20";
          case "failed":
             return "text-red-500 bg-red-500/10 border-red-500/20";
          default:
-            return "text-[#A1A1AA] bg-[#27272A]/50 border-[#27272A]";
+            return "text-mute bg-white/5 border-hair-strong";
       }
    };
 
@@ -294,10 +294,10 @@ export default function ProjectOverviewClient({
 
    if (isLoading) {
       return (
-         <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
+         <div className="min-h-screen bg-ink flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
-               <div className="w-8 h-8 border-2 border-[#27272A] border-t-[#FAFAFA] rounded-full animate-spin" />
-               <p className="text-[#A1A1AA] text-sm font-medium">
+               <div className="w-8 h-8 border-2 border-hair-strong border-t-fg rounded-full animate-spin" />
+               <p className="text-mute text-sm font-medium">
                   Loading project details...
                </p>
             </div>
@@ -307,18 +307,18 @@ export default function ProjectOverviewClient({
 
    if (error || !project) {
       return (
-         <div className="min-h-screen bg-[#09090B] flex items-center justify-center p-6">
-            <div className="max-w-md w-full bg-[#111113] border border-[#27272A] rounded-md p-6 text-center space-y-4">
+         <div className="min-h-screen bg-ink flex items-center justify-center p-6">
+            <div className="max-w-md w-full bg-panel border border-hair-strong rounded-xl p-6 text-center space-y-4">
                <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
-               <h2 className="text-[#FAFAFA] text-lg font-bold">
+               <h2 className="text-fg text-lg font-bold">
                   Failed to load project
                </h2>
-               <p className="text-[#A1A1AA] text-sm">
+               <p className="text-mute text-sm">
                   {error || "Project could not be found."}
                </p>
                <button
                   onClick={() => (window.location.href = "/home")}
-                  className="bg-[#FAFAFA] text-[#09090B] px-4 py-2 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors mt-2"
+                  className="bg-fg text-ink px-4 py-2 rounded-md text-sm font-medium hover:bg-white transition-colors mt-2"
                >
                   Back to Dashboard
                </button>
@@ -360,186 +360,153 @@ export default function ProjectOverviewClient({
       .slice(0, 3)
       .map((dep) => dep.ID || dep.id);
 
+   const liveUrl = productionUrl.startsWith("http") ? productionUrl : `https://${productionUrl}`;
+   const tabs = [
+      { id: "deployments" as const, label: "Deployments", icon: Activity },
+      { id: "metrics" as const, label: "Metrics & Scaling", icon: BarChart3 },
+      { id: "variables" as const, label: "Environment", icon: Key, count: envs.length },
+      { id: "settings" as const, label: "Settings", icon: Settings },
+   ];
+
    return (
-      <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] font-sans antialiased selection:bg-blue-500/30 flex flex-col">
-         <nav className="h-14 border-b border-[#27272A] bg-[#09090B] shrink-0 px-6 flex items-center gap-4 sticky top-0 z-10">
-            <button
-               onClick={() => (window.location.href = "/home")}
-               className="text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors flex items-center justify-center p-1"
-            >
-               <ArrowLeft className="w-4 h-4" />
-            </button>
+      <div className="min-h-screen bg-ink text-fg flex flex-col">
+         <AppHeader crumbs={[{ label: "Projects", href: "/home" }, { label: projectName }]} />
 
-            <div className="flex items-center gap-2 text-sm font-medium">
-               <span className="text-[#A1A1AA]">avichal-08</span>
-               <span className="text-[#52525B]">/</span>
-               <span className="text-[#FAFAFA]">{projectName}</span>
-            </div>
-         </nav>
+         <main className="flex-1">
+            <div className="border-b border-hair">
+               <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                     <div className="flex items-start gap-4 min-w-0">
+                        <span className="hidden sm:flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-hair-strong bg-panel font-mono text-xl font-semibold uppercase text-fg">
+                           {String(projectName).slice(0, 1)}
+                        </span>
+                        <div className="min-w-0 space-y-3">
+                           <div className="flex flex-wrap items-center gap-3">
+                              <h1 className="text-[32px] leading-none font-semibold tracking-[-0.035em] text-fg truncate">
+                                 {projectName}
+                              </h1>
+                              <span
+                                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium capitalize ${getStatusColor(status)}`}
+                              >
+                                 {getStatusIcon(status)}
+                                 {status}
+                              </span>
+                           </div>
 
-         <main className="flex-1 overflow-y-auto p-6 md:p-10">
-            <div className="max-w-5xl mx-auto space-y-8">
-               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                  <div className="space-y-4">
-                     <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[#FAFAFA]">
-                        {projectName}
-                     </h1>
-
-                     <div className="flex flex-wrap items-center gap-3 text-sm">
-                        <a
-                           href={
-                              productionUrl.startsWith("http")
-                                 ? productionUrl
-                                 : `https://${productionUrl}`
-                           }
-                           target="_blank"
-                           rel="noreferrer"
-                           className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors font-medium"
-                        >
-                           {productionUrl
-                              .replace("https://", "")
-                              .replace("http://", "")}
-                           <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-
-                        {customDomain && (
-                           <>
-                              <span className="text-[#27272A]">•</span>
+                           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
                               <a
-                                 href={`https://${customDomain}`}
+                                 href={liveUrl}
                                  target="_blank"
                                  rel="noreferrer"
-                                 className="flex items-center gap-1.5 text-green-400 hover:text-green-300 transition-colors font-medium"
+                                 className="flex items-center gap-1.5 font-mono text-signal hover:text-[#ff8a57] transition-colors"
                               >
-                                 https://{customDomain}
+                                 {liveUrl.replace(/^https?:\/\//, "")}
                                  <ExternalLink className="w-3.5 h-3.5" />
                               </a>
-                           </>
-                        )}
+                              {customDomain && (
+                                 <a
+                                    href={`https://${customDomain}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center gap-1.5 font-mono text-ok hover:brightness-110 transition"
+                                 >
+                                    {customDomain}
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                 </a>
+                              )}
+                              <a
+                                 href={repoUrl}
+                                 target="_blank"
+                                 rel="noreferrer"
+                                 className="flex items-center gap-1.5 font-mono text-mute hover:text-fg transition-colors"
+                              >
+                                 <GitBranch className="w-3.5 h-3.5" />
+                                 {formatRepo(repoUrl)}
+                              </a>
+                           </div>
+                        </div>
+                     </div>
 
-                        <span className="text-[#27272A]">•</span>
-
-                        <a
-                           href={repoUrl}
-                           target="_blank"
-                           rel="noreferrer"
-                           className="flex items-center gap-1.5 text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
-                        >
-                           <GitBranch className="w-4 h-4" />
-                           {formatRepo(repoUrl)}
+                     <div className="flex items-center gap-2 shrink-0">
+                        <a href={liveUrl} target="_blank" rel="noreferrer" className="ui-btn-ghost px-3.5 py-2 text-[13px]">
+                           Visit
+                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
+                        <button
+                           onClick={() => (window.location.href = `/project/${projectId}/deploy`)}
+                           className="ui-btn-accent px-3.5 py-2 text-[13px]"
+                        >
+                           <RotateCcw className="w-3.5 h-3.5" />
+                           Redeploy
+                        </button>
                      </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                     <div
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium capitalize ${getStatusColor(status)}`}
-                     >
-                        {getStatusIcon(status)}
-                        {status}
-                     </div>
-                     <button
-                        onClick={() =>
-                           (window.location.href = `/project/${projectId}/deploy`)
-                        }
-                        className="bg-[#FAFAFA] text-[#09090B] px-4 py-1.5 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors shadow-sm"
-                     >
-                        Redeploy
-                     </button>
+                  <div role="tablist" className="mt-8 flex gap-1 overflow-x-auto -mb-px">
+                     {tabs.map((t) => {
+                        const active = activeTab === t.id;
+                        return (
+                           <button
+                              key={t.id}
+                              role="tab"
+                              aria-selected={active}
+                              onClick={() => setActiveTab(t.id)}
+                              className={`relative flex items-center gap-2 whitespace-nowrap px-3 pb-3 pt-1 text-[13px] font-medium transition-colors border-b-2 ${
+                                 active ? "border-signal text-fg" : "border-transparent text-mute hover:text-fg"
+                              }`}
+                           >
+                              <t.icon className="w-4 h-4" />
+                              {t.label}
+                              {!!t.count && (
+                                 <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] text-fg">{t.count}</span>
+                              )}
+                           </button>
+                        );
+                     })}
                   </div>
                </div>
+            </div>
 
-               <div className="flex border-b border-[#27272A] space-x-6">
-                  <button
-                     onClick={() => setActiveTab("deployments")}
-                     className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
-                        activeTab === "deployments"
-                           ? "border-[#FAFAFA] text-[#FAFAFA]"
-                           : "border-transparent text-[#A1A1AA] hover:text-[#FAFAFA]"
-                     }`}
-                  >
-                     <Activity className="w-4 h-4" />
-                     Deployments
-                  </button>
-                  <button
-                     onClick={() => setActiveTab("metrics")}
-                     className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
-                        activeTab === "metrics"
-                           ? "border-[#FAFAFA] text-[#FAFAFA]"
-                           : "border-transparent text-[#A1A1AA] hover:text-[#FAFAFA]"
-                     }`}
-                  >
-                     <BarChart3 className="w-4 h-4" />
-                     Metrics & Scaling
-                  </button>
-                  <button
-                     onClick={() => setActiveTab("variables")}
-                     className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
-                        activeTab === "variables"
-                           ? "border-[#FAFAFA] text-[#FAFAFA]"
-                           : "border-transparent text-[#A1A1AA] hover:text-[#FAFAFA]"
-                     }`}
-                  >
-                     <Key className="w-4 h-4" />
-                     Environment Variables
-                     {envs.length > 0 && (
-                        <span className="bg-[#27272A] text-[#FAFAFA] px-1.5 py-0.5 rounded-full text-[10px]">
-                           {envs.length}
-                        </span>
-                     )}
-                  </button>
-                  <button
-                     onClick={() => setActiveTab("settings")}
-                     className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
-                        activeTab === "settings"
-                           ? "border-[#FAFAFA] text-[#FAFAFA]"
-                           : "border-transparent text-[#A1A1AA] hover:text-[#FAFAFA]"
-                     }`}
-                  >
-                     <Settings className="w-4 h-4" />
-                     Settings
-                  </button>
-               </div>
-
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
                {activeTab === "deployments" && (
                   <div className="space-y-8 animate-in fade-in duration-300">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-[#111113] border border-[#27272A] rounded-md p-6 space-y-6">
-                           <h2 className="text-lg font-semibold text-[#FAFAFA] flex items-center gap-2">
-                              <Activity className="w-4 h-4 text-[#A1A1AA]" />
+                        <div className="bg-panel border border-hair-strong rounded-xl p-6 space-y-6">
+                           <h2 className="text-lg font-semibold text-fg flex items-center gap-2">
+                              <Activity className="w-4 h-4 text-mute" />
                               Current Deployment
                            </h2>
 
                            <div className="space-y-4">
                               <div className="grid grid-cols-3 text-sm">
-                                 <span className="text-[#A1A1AA]">Status</span>
-                                 <span className="col-span-2 text-[#FAFAFA] capitalize">
+                                 <span className="text-mute">Status</span>
+                                 <span className="col-span-2 text-fg capitalize">
                                     {status}
                                  </span>
                               </div>
                               <div className="grid grid-cols-3 text-sm">
-                                 <span className="text-[#A1A1AA]">Created</span>
-                                 <span className="col-span-2 text-[#FAFAFA]">
+                                 <span className="text-mute">Created</span>
+                                 <span className="col-span-2 text-fg">
                                     {formatDate(createdAt)}
                                  </span>
                               </div>
                               <div className="grid grid-cols-3 text-sm">
-                                 <span className="text-[#A1A1AA]">
+                                 <span className="text-mute">
                                     Framework
                                  </span>
                                  <div className="col-span-2 flex items-center gap-2">
-                                    <Box className="w-4 h-4 text-[#FAFAFA]" />
-                                    <span className="text-[#FAFAFA] capitalize">
+                                    <Box className="w-4 h-4 text-fg" />
+                                    <span className="text-fg capitalize">
                                        {framework}
                                     </span>
                                  </div>
                               </div>
                               <div className="grid grid-cols-3 text-sm">
-                                 <span className="text-[#A1A1AA]">
+                                 <span className="text-mute">
                                     Deployment ID
                                  </span>
                                  <span
-                                    className="col-span-2 text-[#FAFAFA] font-mono text-xs truncate"
+                                    className="col-span-2 text-fg font-mono text-xs truncate"
                                     title={activeDeployment || "None"}
                                  >
                                     {activeDeployment
@@ -551,27 +518,27 @@ export default function ProjectOverviewClient({
                            </div>
                         </div>
 
-                        <div className="bg-[#111113] border border-[#27272A] rounded-md p-6 space-y-6">
-                           <h2 className="text-lg font-semibold text-[#FAFAFA] flex items-center gap-2">
-                              <Terminal className="w-4 h-4 text-[#A1A1AA]" />
+                        <div className="bg-panel border border-hair-strong rounded-xl p-6 space-y-6">
+                           <h2 className="text-lg font-semibold text-fg flex items-center gap-2">
+                              <Terminal className="w-4 h-4 text-mute" />
                               Build Configuration
                            </h2>
 
                            <div className="space-y-5">
                               <div className="space-y-2">
-                                 <span className="text-[#A1A1AA] text-sm">
+                                 <span className="text-mute text-sm">
                                     Build Command
                                  </span>
-                                 <div className="bg-[#09090B] border border-[#27272A] rounded p-2.5 font-mono text-xs text-[#FAFAFA] overflow-x-auto whitespace-nowrap">
+                                 <div className="bg-ink border border-hair-strong rounded p-2.5 font-mono text-xs text-fg overflow-x-auto whitespace-nowrap">
                                     {buildCmd}
                                  </div>
                               </div>
 
                               <div className="space-y-2">
-                                 <span className="text-[#A1A1AA] text-sm">
+                                 <span className="text-mute text-sm">
                                     Run Command
                                  </span>
-                                 <div className="bg-[#09090B] border border-[#27272A] rounded p-2.5 font-mono text-xs text-[#FAFAFA] overflow-x-auto whitespace-nowrap">
+                                 <div className="bg-ink border border-hair-strong rounded p-2.5 font-mono text-xs text-fg overflow-x-auto whitespace-nowrap">
                                     {runCmd}
                                  </div>
                               </div>
@@ -579,17 +546,17 @@ export default function ProjectOverviewClient({
                         </div>
                      </div>
 
-                     <div className="bg-[#111113] border border-[#27272A] rounded-md overflow-visible relative z-0">
-                        <div className="p-6 border-b border-[#27272A] flex items-center justify-between">
-                           <h2 className="text-lg font-semibold text-[#FAFAFA] flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-[#A1A1AA]" />
+                     <div className="bg-panel border border-hair-strong rounded-xl overflow-visible relative z-0">
+                        <div className="p-6 border-b border-hair-strong flex items-center justify-between">
+                           <h2 className="text-lg font-semibold text-fg flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-mute" />
                               Deployment History
                            </h2>
                         </div>
 
-                        <div className="divide-y divide-[#27272A]">
+                        <div className="divide-y divide-hair-strong">
                            {sortedDeployments.length === 0 ? (
-                              <div className="p-8 text-center text-[#A1A1AA] text-sm">
+                              <div className="p-8 text-center text-mute text-sm">
                                  No deployments found for this project.
                               </div>
                            ) : (
@@ -613,7 +580,7 @@ export default function ProjectOverviewClient({
                                        onClick={() =>
                                           (window.location.href = `/project/${projectId}/${depId}`)
                                        }
-                                       className={`group flex items-center justify-between p-4 hover:bg-[#27272A]/30 transition-colors cursor-pointer relative ${openMenuId === depId ? "z-50" : "z-0"}`}
+                                       className={`group flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer relative ${openMenuId === depId ? "z-50" : "z-0"}`}
                                     >
                                        <div className="flex items-center gap-4">
                                           <div
@@ -624,22 +591,22 @@ export default function ProjectOverviewClient({
                                           </div>
 
                                           <div className="flex items-center gap-2 text-sm">
-                                             <GitCommit className="w-4 h-4 text-[#A1A1AA]" />
-                                             <span className="font-mono text-[#FAFAFA]">
+                                             <GitCommit className="w-4 h-4 text-mute" />
+                                             <span className="font-mono text-fg">
                                                 {depCommit.substring(0, 7)}
                                              </span>
                                           </div>
 
                                           {isActive && (
-                                             <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider ml-2">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                             <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded bg-signal/10 border border-signal/20 text-signal text-[10px] font-bold uppercase tracking-wider ml-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
                                                 Active
                                              </div>
                                           )}
                                        </div>
 
                                        <div className="flex items-center gap-4 md:gap-6">
-                                          <span className="text-sm text-[#A1A1AA] hidden sm:block">
+                                          <span className="text-sm text-mute hidden sm:block">
                                              {formatDate(depCreatedAt)}
                                           </span>
 
@@ -656,7 +623,7 @@ export default function ProjectOverviewClient({
                                                                : depId,
                                                          );
                                                       }}
-                                                      className="rollback-menu-btn p-1 rounded text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] transition-colors"
+                                                      className="rollback-menu-btn p-1 rounded text-mute hover:text-fg hover:bg-white/10 transition-colors"
                                                    >
                                                       {isRollingBack ===
                                                       depId ? (
@@ -667,7 +634,7 @@ export default function ProjectOverviewClient({
                                                    </button>
 
                                                    {openMenuId === depId && (
-                                                      <div className="absolute right-0 mt-1 w-40 bg-[#111113] border border-[#27272A] rounded-md shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
+                                                      <div className="absolute right-0 mt-1 w-40 bg-panel border border-hair-strong rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
                                                          <button
                                                             onClick={(e) => {
                                                                e.preventDefault();
@@ -676,7 +643,7 @@ export default function ProjectOverviewClient({
                                                                   depId,
                                                                );
                                                             }}
-                                                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[#FAFAFA] hover:bg-[#27272A] transition-colors text-left"
+                                                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-fg hover:bg-white/10 transition-colors text-left"
                                                          >
                                                             <RotateCcw className="w-4 h-4" />
                                                             Rollback Here
@@ -685,7 +652,7 @@ export default function ProjectOverviewClient({
                                                    )}
                                                 </div>
                                              )}
-                                             <ChevronRight className="w-4 h-4 text-[#52525B] group-hover:text-[#FAFAFA] transition-colors" />
+                                             <ChevronRight className="w-4 h-4 text-faint group-hover:text-fg transition-colors" />
                                           </div>
                                        </div>
                                     </div>
@@ -701,12 +668,12 @@ export default function ProjectOverviewClient({
 
                {activeTab === "variables" && (
                   <div className="space-y-6 animate-in fade-in duration-300">
-                     <div className="bg-[#111113] border border-[#27272A] rounded-md p-6 space-y-6">
+                     <div className="bg-panel border border-hair-strong rounded-xl p-6 space-y-6">
                         <div>
-                           <h2 className="text-lg font-semibold text-[#FAFAFA]">
+                           <h2 className="text-lg font-semibold text-fg">
                               Environment Variables
                            </h2>
-                           <p className="text-sm text-[#A1A1AA] mt-1">
+                           <p className="text-sm text-mute mt-1">
                               Configure environment variables for your build and
                               runtime environments.
                            </p>
@@ -722,7 +689,7 @@ export default function ProjectOverviewClient({
                               value={newKey}
                               onChange={(e) => setNewKey(e.target.value)}
                               disabled={isAddingEnv}
-                              className="w-full sm:w-1/3 bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] font-mono placeholder:text-[#52525B] focus:outline-none focus:border-[#FAFAFA]"
+                              className="w-full sm:w-1/3 bg-ink border border-hair-strong rounded-md px-3 py-2 text-sm text-fg font-mono placeholder:text-faint focus:outline-none focus:border-fg"
                            />
                            <input
                               type="text"
@@ -730,7 +697,7 @@ export default function ProjectOverviewClient({
                               value={newValue}
                               onChange={(e) => setNewValue(e.target.value)}
                               disabled={isAddingEnv}
-                              className="w-full sm:flex-1 bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] font-mono placeholder:text-[#52525B] focus:outline-none focus:border-[#FAFAFA]"
+                              className="w-full sm:flex-1 bg-ink border border-hair-strong rounded-md px-3 py-2 text-sm text-fg font-mono placeholder:text-faint focus:outline-none focus:border-fg"
                            />
                            <button
                               type="submit"
@@ -739,7 +706,7 @@ export default function ProjectOverviewClient({
                                  !newKey.trim() ||
                                  !newValue.trim()
                               }
-                              className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-[#FAFAFA] text-[#09090B] px-4 py-2 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors disabled:opacity-50 shrink-0"
+                              className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-fg text-ink px-4 py-2 rounded-md text-sm font-medium hover:bg-white transition-colors disabled:opacity-50 shrink-0"
                            >
                               {isAddingEnv ? (
                                  <Loader2 className="w-4 h-4 animate-spin" />
@@ -751,9 +718,9 @@ export default function ProjectOverviewClient({
                         </form>
                      </div>
 
-                     <div className="bg-[#111113] border border-[#27272A] rounded-md overflow-hidden divide-y divide-[#27272A]">
+                     <div className="bg-panel border border-hair-strong rounded-xl overflow-hidden divide-y divide-hair-strong">
                         {envs.length === 0 ? (
-                           <div className="p-8 text-center text-[#A1A1AA] text-sm">
+                           <div className="p-8 text-center text-mute text-sm">
                               No environment variables added yet.
                            </div>
                         ) : (
@@ -764,7 +731,7 @@ export default function ProjectOverviewClient({
                               return (
                                  <div
                                     key={envId}
-                                    className="p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#111113]/50"
+                                    className="p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-panel/50"
                                  >
                                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                        <input
@@ -786,7 +753,7 @@ export default function ProjectOverviewClient({
                                                 );
                                              }
                                           }}
-                                          className="bg-[#09090B] border border-[#27272A] rounded px-3 py-1.5 text-sm text-[#FAFAFA] font-mono focus:outline-none focus:border-[#FAFAFA]"
+                                          className="bg-ink border border-hair-strong rounded px-3 py-1.5 text-sm text-fg font-mono focus:outline-none focus:border-fg"
                                        />
                                        <div className="relative flex items-center">
                                           <input
@@ -810,7 +777,7 @@ export default function ProjectOverviewClient({
                                                    );
                                                 }
                                              }}
-                                             className="w-full bg-[#09090B] border border-[#27272A] rounded px-3 py-1.5 pr-10 text-sm text-[#FAFAFA] font-mono focus:outline-none focus:border-[#FAFAFA]"
+                                             className="w-full bg-ink border border-hair-strong rounded px-3 py-1.5 pr-10 text-sm text-fg font-mono focus:outline-none focus:border-fg"
                                           />
                                           <button
                                              type="button"
@@ -820,7 +787,7 @@ export default function ProjectOverviewClient({
                                                    [envId]: !isVisible,
                                                 })
                                              }
-                                             className="absolute right-2.5 text-[#A1A1AA] hover:text-[#FAFAFA]"
+                                             className="absolute right-2.5 text-mute hover:text-fg"
                                           >
                                              {isVisible ? (
                                                 <EyeOff className="w-4 h-4" />
@@ -833,7 +800,7 @@ export default function ProjectOverviewClient({
 
                                     <button
                                        onClick={() => handleDeleteEnv(envId)}
-                                       className="self-end sm:self-center p-2 text-[#A1A1AA] hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                                       className="self-end sm:self-center p-2 text-mute hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
                                        title="Delete Variable"
                                     >
                                        <Trash2 className="w-4 h-4" />
@@ -865,23 +832,23 @@ export default function ProjectOverviewClient({
                         projectId={projectId}
                         repositoryUrl={repoUrl || ""}
                      />
-                     <div className="bg-[#111113] border border-red-500/20 rounded-md p-6 space-y-6">
+                     <div className="bg-panel border border-red-500/20 rounded-md p-6 space-y-6">
                         <div>
                            <h2 className="text-lg font-semibold text-red-400">
                               Danger Zone
                            </h2>
-                           <p className="text-sm text-[#A1A1AA] mt-1">
+                           <p className="text-sm text-mute mt-1">
                               Permanently delete this project, its
                               configuration, environment variables, and all
                               associated deployment containers.
                            </p>
                         </div>
 
-                        <div className="pt-4 border-t border-[#27272A] space-y-4">
+                        <div className="pt-4 border-t border-hair-strong space-y-4">
                            <div className="space-y-2">
-                              <label className="block text-xs font-medium text-[#A1A1AA]">
+                              <label className="block text-xs font-medium text-mute">
                                  Type{" "}
-                                 <strong className="text-[#FAFAFA] font-mono">
+                                 <strong className="text-fg font-mono">
                                     {projectName}
                                  </strong>{" "}
                                  to confirm deletion:
@@ -893,7 +860,7 @@ export default function ProjectOverviewClient({
                                     setConfirmDeleteName(e.target.value)
                                  }
                                  placeholder={projectName}
-                                 className="w-full sm:w-80 bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] font-mono focus:outline-none focus:border-red-500"
+                                 className="w-full sm:w-80 bg-ink border border-hair-strong rounded-md px-3 py-2 text-sm text-fg font-mono focus:outline-none focus:border-red-500"
                               />
                            </div>
 

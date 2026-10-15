@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -30,58 +30,64 @@ export default function LoginPage() {
          }
 
          window.location.href = "/home";
-      } catch (err: any) {
-         setError(err.message);
+      } catch (err) {
+         setError(err instanceof Error ? err.message : "Something went wrong");
       } finally {
          setIsLoading(false);
       }
    };
 
    return (
-      <div className="max-w-sm w-full mx-auto bg-[#111113] border border-[#27272A] rounded-md p-8 shadow-2xl">
-         <h2 className="text-xl font-bold text-[#FAFAFA] mb-6 text-center">Log in to Dploy</h2>
+      <div className="w-full max-w-sm">
+         <h2 className="text-[28px] font-semibold tracking-[-0.03em] text-fg">Welcome back</h2>
+         <p className="mt-1.5 text-sm text-mute">Log in to manage your deployments.</p>
 
          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-md text-sm mb-6">
+            <div role="alert" className="mt-6 rounded-lg border border-red-500/25 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300">
                {error}
             </div>
          )}
 
-         <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-               <label className="block text-xs font-medium text-[#A1A1AA]">Email</label>
+         <form onSubmit={handleLogin} className="mt-8 space-y-4">
+            <div className="space-y-1.5">
+               <label htmlFor="email" className="ui-label">Email</label>
                <input
+                  id="email"
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] focus:outline-none focus:border-blue-500 transition-colors"
+                  className="ui-input"
+                  placeholder="you@company.com"
                />
             </div>
-            <div className="space-y-2">
-               <label className="block text-xs font-medium text-[#A1A1AA]">Password</label>
+            <div className="space-y-1.5">
+               <label htmlFor="password" className="ui-label">Password</label>
                <input
+                  id="password"
                   type="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] focus:outline-none focus:border-blue-500 transition-colors"
+                  className="ui-input"
                />
             </div>
 
-            <button
-               type="submit"
-               disabled={isLoading}
-               className="w-full flex justify-center items-center gap-2 bg-[#FAFAFA] text-[#09090B] py-2 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors mt-4 disabled:opacity-50"
-            >
-               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-               {isLoading ? "Logging in..." : "Log In"}
+            <button type="submit" disabled={isLoading} className="ui-btn-accent group mt-2 w-full py-2.5">
+               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+               {isLoading ? "Logging in..." : "Log in"}
+               {!isLoading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
             </button>
-
-            <p className="text-center text-xs text-[#A1A1AA] mt-6">
-               Don't have an account? <Link href="/auth/register" className="text-blue-400 hover:underline">Sign up with Invite Code</Link>
-            </p>
          </form>
+
+         <p className="mt-8 text-sm text-mute">
+            Have an invite code?{" "}
+            <Link href="/auth/register" className="font-medium text-fg underline decoration-hair-strong underline-offset-4 transition hover:decoration-signal">
+               Create an account
+            </Link>
+         </p>
       </div>
    );
 }

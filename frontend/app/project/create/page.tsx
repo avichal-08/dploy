@@ -7,8 +7,8 @@ import {
    Loader2,
    ArrowRight,
    AlertCircle,
-   TerminalSquare,
 } from "lucide-react";
+import { AppHeader } from "@/components/app/AppHeader";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
@@ -156,39 +156,27 @@ export default function CreateProjectPage() {
    };
 
    return (
-      <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] font-sans selection:bg-blue-500/30 flex flex-col">
-         <nav className="h-14 border-b border-[#27272A] bg-[#09090B] sticky top-0 z-10 flex items-center px-6">
-            <div className="max-w-6xl w-full mx-auto flex items-center justify-between">
-               <div
-                  className="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80"
-                  onClick={() => router.push("/home")}
-               >
-                  <TerminalSquare className="w-5 h-5 text-[#FAFAFA]" />
-                  <span className="font-bold tracking-tight text-sm">
-                     DPLOY
-                  </span>
-               </div>
-            </div>
-         </nav>
+      <div className="min-h-screen bg-ink text-fg flex flex-col">
+         <AppHeader crumbs={[{ label: "Projects", href: "/home" }, { label: "New project" }]} />
 
          <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
             <div className="w-full max-w-[480px] space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                <div className="text-center space-y-2">
-                  <h1 className="text-2xl font-bold tracking-tight text-[#FAFAFA]">
+                  <h1 className="text-2xl font-bold tracking-tight text-fg">
                      Create a new Project
                   </h1>
-                  <p className="text-sm text-[#A1A1AA]">
+                  <p className="text-sm text-mute">
                      Import a GitHub repository to begin deploying.
                   </p>
                </div>
 
-               <div className="bg-[#111113] border border-[#27272A] rounded-md p-6 sm:p-8 shadow-2xl">
+               <div className="bg-panel border border-hair-strong rounded-xl p-6 sm:p-8 shadow-2xl">
                   <form onSubmit={handleCreateProject} className="space-y-6">
                      <div className="space-y-4">
                         <div className="space-y-2">
                            <label
                               htmlFor="repoUrl"
-                              className="block text-sm font-medium text-[#FAFAFA]"
+                              className="block text-sm font-medium text-fg"
                            >
                               GitHub Repository URL
                            </label>
@@ -200,14 +188,14 @@ export default function CreateProjectPage() {
                               onChange={(e) => setRepoUrl(e.target.value)}
                               placeholder="https://github.com/username/repo"
                               disabled={isLoading}
-                              className="w-full bg-[#09090B] border border-[#27272A] rounded-md px-4 py-2 text-sm text-[#FAFAFA] placeholder:text-[#52525B] focus:outline-none focus:border-[#FAFAFA] focus:ring-1 focus:ring-[#FAFAFA] transition-all disabled:opacity-50"
+                              className="w-full bg-ink border border-hair-strong rounded-md px-4 py-2 text-sm text-fg placeholder:text-faint focus:outline-none focus:border-fg focus:ring-1 focus:ring-fg transition-all disabled:opacity-50"
                            />
                         </div>
 
                         <div className="space-y-2">
                            <label
                               htmlFor="projectName"
-                              className="block text-sm font-medium text-[#FAFAFA]"
+                              className="block text-sm font-medium text-fg"
                            >
                               Project Name
                            </label>
@@ -225,12 +213,12 @@ export default function CreateProjectPage() {
                               }
                               placeholder="my-awesome-app"
                               disabled={isLoading}
-                              className="w-full bg-[#09090B] border border-[#27272A] rounded-md px-4 py-2 text-sm text-[#FAFAFA] placeholder:text-[#52525B] focus:outline-none focus:border-[#FAFAFA] focus:ring-1 focus:ring-[#FAFAFA] transition-all disabled:opacity-50"
+                              className="w-full bg-ink border border-hair-strong rounded-md px-4 py-2 text-sm text-fg placeholder:text-faint focus:outline-none focus:border-fg focus:ring-1 focus:ring-fg transition-all disabled:opacity-50"
                            />
-                           <p className="text-[11px] text-[#A1A1AA]">
+                           <p className="text-[11px] text-mute">
                               This will be used to generate your subdomain
                               (e.g.,{" "}
-                              <span className="text-[#FAFAFA]">
+                              <span className="text-fg">
                                  {projectName || "project"}.dploy.avichal.me
                               </span>
                               ).
@@ -238,13 +226,13 @@ export default function CreateProjectPage() {
                         </div>
                      </div>
 
-                     <div className="pt-4 border-t border-[#27272A] space-y-4">
+                     <div className="pt-4 border-t border-hair-strong space-y-4">
                         <div className="flex items-center justify-between">
                            <div>
-                              <h3 className="text-sm font-medium text-[#FAFAFA]">
+                              <h3 className="text-sm font-medium text-fg">
                                  Environment Variables
                               </h3>
-                              <p className="text-[11px] text-[#A1A1AA] mt-0.5">
+                              <p className="text-[11px] text-mute mt-0.5">
                                  Securely passed to your app at build and
                                  runtime.
                               </p>
@@ -269,7 +257,7 @@ export default function CreateProjectPage() {
                                        )
                                     }
                                     disabled={isLoading}
-                                    className="w-1/3 bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] placeholder:text-[#52525B] focus:outline-none focus:border-[#FAFAFA] focus:ring-1 focus:ring-[#FAFAFA] font-mono transition-all disabled:opacity-50"
+                                    className="w-1/3 bg-ink border border-hair-strong rounded-md px-3 py-2 text-sm text-fg placeholder:text-faint focus:outline-none focus:border-fg focus:ring-1 focus:ring-fg font-mono transition-all disabled:opacity-50"
                                  />
                                  <input
                                     type="text"
@@ -283,13 +271,13 @@ export default function CreateProjectPage() {
                                        )
                                     }
                                     disabled={isLoading}
-                                    className="flex-1 bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] placeholder:text-[#52525B] focus:outline-none focus:border-[#FAFAFA] focus:ring-1 focus:ring-[#FAFAFA] font-mono transition-all disabled:opacity-50"
+                                    className="flex-1 bg-ink border border-hair-strong rounded-md px-3 py-2 text-sm text-fg placeholder:text-faint focus:outline-none focus:border-fg focus:ring-1 focus:ring-fg font-mono transition-all disabled:opacity-50"
                                  />
                                  <button
                                     type="button"
                                     onClick={() => handleRemoveEnv(index)}
                                     disabled={isLoading || envs.length === 1}
-                                    className="p-2 text-[#A1A1AA] hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#A1A1AA]"
+                                    className="p-2 text-mute hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-mute"
                                  >
                                     <Trash2 className="w-4 h-4" />
                                  </button>
@@ -301,7 +289,7 @@ export default function CreateProjectPage() {
                            type="button"
                            onClick={handleAddEnv}
                            disabled={isLoading}
-                           className="flex items-center gap-1.5 text-xs font-medium text-[#FAFAFA] hover:text-blue-400 transition-colors disabled:opacity-50"
+                           className="flex items-center gap-1.5 text-xs font-medium text-fg hover:text-signal transition-colors disabled:opacity-50"
                         >
                            <Plus className="w-3.5 h-3.5" /> Add Another
                         </button>
@@ -319,7 +307,7 @@ export default function CreateProjectPage() {
                      <button
                         type="submit"
                         disabled={isLoading || !repoUrl || !projectName}
-                        className="w-full flex items-center justify-center gap-2 bg-[#FAFAFA] text-[#09090B] py-2.5 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full flex items-center justify-center gap-2 bg-fg text-ink py-2.5 rounded-md text-sm font-medium hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                      >
                         {isLoading ? (
                            <>

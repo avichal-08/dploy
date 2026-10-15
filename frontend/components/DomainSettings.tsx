@@ -71,9 +71,9 @@ export function DomainSettings({
    };
 
    return (
-      <div className="bg-[#111113] border border-[#27272A] rounded-md p-6 text-[#FAFAFA] w-full">
+      <div className="bg-panel border border-hair-strong rounded-xl p-6 text-fg w-full">
          <h2 className="text-xl font-semibold mb-2">Project Domain</h2>
-         <p className="text-gray-400 text-sm mb-6">
+         <p className="text-faint text-sm mb-6">
             This is the custom subdomain where your project is currently hosted.
             Changing this will instantly update your routing.
          </p>
@@ -84,31 +84,31 @@ export function DomainSettings({
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value.toLowerCase())}
-                  className="flex-1 bg-black border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="flex-1 bg-black border border-hair-strong rounded px-3 py-2 text-white focus:outline-none focus:border-signal/60 transition-colors"
                   placeholder="my-awesome-project"
                   required
                />
-               <span className="text-gray-500 font-mono">
+               <span className="text-faint font-mono">
                   .dploy.avichal.me
                </span>
             </div>
 
             {message && (
                <div
-                  className={`p-3 rounded text-sm ${message.type === "error" ? "bg-red-900/50 text-red-200 border border-red-800" : "bg-green-900/50 text-green-200 border border-green-800"}`}
+                  className={`p-3 rounded text-sm ${message.type === "error" ? "bg-red-900/50 text-red-200 border border-red-800" : "bg-ok/10 text-ok border border-ok/25"}`}
                >
                   {message.text}
                </div>
             )}
 
-            <div className="flex justify-between items-center pt-4 border-t border-gray-800 mt-6">
-               <p className="text-sm text-gray-500">
+            <div className="flex justify-between items-center pt-4 border-t border-hair-strong mt-6">
+               <p className="text-sm text-faint">
                   Current URL:{" "}
                   <a
                      href={currentUrl.startsWith("http") ? currentUrl : `https://${currentUrl}`}
                      target="_blank"
                      rel="noreferrer"
-                     className="text-blue-400 hover:underline"
+                     className="text-signal hover:underline"
                   >
                      {currentUrl.replace("https://", "").replace("http://", "")}
                   </a>
@@ -116,7 +116,7 @@ export function DomainSettings({
                <button
                   type="submit"
                   disabled={loading || newName === currentName}
-                  className="bg-white text-black px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
+                  className="bg-white text-black px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
                >
                   {loading ? "Saving..." : "Save"}
                </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Key } from "lucide-react";
+import { ArrowRight, Key, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function RegisterPage() {
@@ -19,14 +19,8 @@ export default function RegisterPage() {
       try {
          const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/auth/register`, {
             method: "POST",
-            headers: {
-               "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-               email,
-               password,
-               invite_code: inviteCode,
-            }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, invite_code: inviteCode }),
             credentials: "include",
          });
 
@@ -37,88 +31,83 @@ export default function RegisterPage() {
          }
 
          window.location.href = "/home";
-      } catch (err: any) {
-         setError(err.message);
+      } catch (err) {
+         setError(err instanceof Error ? err.message : "Something went wrong");
       } finally {
          setIsLoading(false);
       }
    };
 
    return (
-      <div className="max-w-sm w-full mx-auto bg-[#111113] border border-[#27272A] rounded-md p-8 shadow-2xl">
-         <h2 className="text-xl font-bold text-[#FAFAFA] mb-6 text-center">
-            Create Account
-         </h2>
+      <div className="w-full max-w-sm">
+         <h2 className="text-[28px] font-semibold tracking-[-0.03em] text-fg">Create your account</h2>
+         <p className="mt-1.5 text-sm text-mute">The hosted beta is invite-only.</p>
 
          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-md text-sm mb-6">
+            <div role="alert" className="mt-6 rounded-lg border border-red-500/25 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300">
                {error}
             </div>
          )}
 
-         <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-2">
-               <label className="block text-xs font-medium text-[#A1A1AA]">
-                  Email
-               </label>
+         <form onSubmit={handleRegister} className="mt-8 space-y-4">
+            <div className="space-y-1.5">
+               <label htmlFor="email" className="ui-label">Email</label>
                <input
+                  id="email"
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] focus:outline-none focus:border-blue-500 transition-colors"
+                  className="ui-input"
+                  placeholder="you@company.com"
                />
             </div>
 
-            <div className="space-y-2">
-               <label className="block text-xs font-medium text-[#A1A1AA]">
-                  Password
-               </label>
+            <div className="space-y-1.5">
+               <label htmlFor="password" className="ui-label">Password</label>
                <input
+                  id="password"
                   type="password"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full bg-[#09090B] border border-[#27272A] rounded-md px-3 py-2 text-sm text-[#FAFAFA] focus:outline-none focus:border-blue-500 transition-colors"
+                  className="ui-input"
+                  placeholder="At least 6 characters"
                />
             </div>
 
-            <div className="space-y-2">
-               <label className="block text-xs font-medium text-[#A1A1AA]">
-                  Invite Code
-               </label>
+            <div className="space-y-1.5">
+               <label htmlFor="invite" className="ui-label">Invite code</label>
                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                     <Key className="h-3.5 w-3.5 text-[#52525B]" />
-                  </div>
+                  <Key className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-faint" />
                   <input
+                     id="invite"
                      type="password"
                      value={inviteCode}
                      onChange={(e) => setInviteCode(e.target.value)}
                      placeholder="Required for early access"
                      required
-                     className="w-full bg-[#09090B] border border-[#27272A] rounded-md pl-9 pr-3 py-2 text-sm text-[#FAFAFA] placeholder:text-[#52525B] focus:outline-none focus:border-blue-500 transition-colors"
+                     className="ui-input pl-9"
                   />
                </div>
             </div>
 
-            <button
-               type="submit"
-               disabled={isLoading}
-               className="w-full flex justify-center items-center gap-2 bg-[#FAFAFA] text-[#09090B] py-2 rounded-md text-sm font-medium hover:bg-[#E4E4E7] transition-colors mt-6 disabled:opacity-50"
-            >
-               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-               {isLoading ? "Creating Account..." : "Sign Up"}
+            <button type="submit" disabled={isLoading} className="ui-btn-accent group mt-2 w-full py-2.5">
+               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+               {isLoading ? "Creating account..." : "Create account"}
+               {!isLoading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
             </button>
-
-            <p className="text-center text-xs text-[#A1A1AA] mt-6">
-               Already have an account?{" "}
-               <Link href="/auth/login" className="text-blue-400 hover:underline">
-                  Log In
-               </Link>
-            </p>
          </form>
+
+         <p className="mt-8 text-sm text-mute">
+            Already have an account?{" "}
+            <Link href="/auth/login" className="font-medium text-fg underline decoration-hair-strong underline-offset-4 transition hover:decoration-signal">
+               Log in
+            </Link>
+         </p>
       </div>
    );
 }
