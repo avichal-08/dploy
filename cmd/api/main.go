@@ -82,6 +82,10 @@ func main() {
 	mux.HandleFunc("GET /api/projects/{id}/metrics", api.AuthMiddleware(api.HandleGetProjectMetrics))
 
 	mux.HandleFunc("POST /api/deployments", api.AuthMiddleware(api.HandleCreateDeployment(asynqClient)))
+
+	mux.HandleFunc("POST /api/webhooks/github/{projectId}", api.HandleGitHubWebhook(asynqClient))
+	mux.HandleFunc("GET /api/projects/{id}/webhook", api.AuthMiddleware(api.HandleGetWebhook))
+	mux.HandleFunc("POST /api/projects/{id}/webhook/rotate", api.AuthMiddleware(api.HandleRotateWebhookSecret))
 	mux.HandleFunc("GET /api/deployments/{id}", api.AuthMiddleware(api.HandleGetDeployment))
 	mux.HandleFunc("POST /api/deployments/{id}/rollback", api.AuthMiddleware(api.HandleRollback))
 

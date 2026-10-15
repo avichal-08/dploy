@@ -13,7 +13,6 @@ import (
 	"github.com/avichal-08/dploy/internal/models"
 	"github.com/avichal-08/dploy/internal/pipeline"
 	"github.com/avichal-08/dploy/internal/proxy"
-	"github.com/avichal-08/dploy/internal/tasks"
 	"github.com/hibiken/asynq"
 )
 
@@ -57,31 +56,12 @@ func HandleCreateDeployment(asynqClient *asynq.Client) http.HandlerFunc {
 			return
 		}
 
-		deployment := models.Deployment{
-			ProjectID: project.ID,
-			CommitSHA: "HEAD",
-			Status:    "pending",
-		}
-
-		if err := db.DB.Create(&deployment).Error; err != nil {
-			slog.Error("failed to create deployment record", "error", err)
+		deployment, err := enqueueDeployment(asynqClient, project, "HEAD", "")
+		if err != nil {
+			slog.Error("failed to start deployment", "error", err)
 			WriteError(w, http.StatusInternalServerError, "Failed to start deployment")
 			return
 		}
-
-		task, err := tasks.NewDeployTask(project.ID, deployment.ID)
-		if err != nil {
-			slog.Error("failed to create deployment task", "error", err)
-			WriteError(w, http.StatusInternalServerError, "failed to create deployment task")
-			return
-		}
-		info, err := asynqClient.Enqueue(task)
-		if err != nil {
-			slog.Error("failed to enqueue deployment task", "error", err)
-			WriteError(w, http.StatusInternalServerError, "failed to enqueue deployment task")
-			return
-		}
-		slog.Info("Enqueued Deployment Task", "task_id", info.ID, "queue", info.Queue)
 
 		WriteJSON(w, http.StatusCreated, deployment)
 	}

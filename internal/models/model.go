@@ -30,6 +30,7 @@ type Project struct {
 	CreatedAt          time.Time  `gorm:"autoCreateTime"`
 	ActiveDeploymentID *string    `gorm:"type:uuid"`
 	LastScaledAt       *time.Time `gorm:"type:time"`
+	WebhookSecret      string     `gorm:"type:varchar(64);not null;default:''" json:"-"`
 
 	Envs        []ProjectEnv `gorm:"constraint:OnDelete:CASCADE;"`
 	Deployments []Deployment `gorm:"constraint:OnDelete:CASCADE;"`

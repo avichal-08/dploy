@@ -29,6 +29,7 @@ import {
 import { MetricsTab } from "@/components/MetricsTab";
 import { DomainSettings } from "@/components/DomainSettings";
 import { CustomDomainSettings } from "@/components/CustomDomainSettings";
+import { GitHubWebhookSettings } from "@/components/GitHubWebhookSettings";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
@@ -858,6 +859,11 @@ export default function ProjectOverviewClient({
                         currentCustomDomain={
                            project.CustomDomain || project.custom_domain || null
                         }
+                     />
+
+                     <GitHubWebhookSettings
+                        projectId={projectId}
+                        repositoryUrl={repoUrl || ""}
                      />
                      <div className="bg-[#111113] border border-red-500/20 rounded-md p-6 space-y-6">
                         <div>

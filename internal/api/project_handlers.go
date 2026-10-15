@@ -28,11 +28,18 @@ func HandleCreateProject(w http.ResponseWriter, r *http.Request) {
 
 	userId := GetUserID(r)
 
+	secret, err := newWebhookSecret()
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "Failed to create project")
+		return
+	}
+
 	project := models.Project{
 		UserID:        userId,
 		Name:          payload.Name,
 		RepositoryURL: payload.RepositoryURL,
 		Status:        "cloning",
+		WebhookSecret: secret,
 	}
 
 	if err := db.DB.Create(&project).Error; err != nil {
