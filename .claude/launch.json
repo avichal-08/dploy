@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/91969/VSLF/dploy/frontend/node_modules/next/dist/bin/next",
+        "dev",
+        "C:/Users/91969/VSLF/dploy/frontend"
+      ],
+      "port": 3000
+    }
+  ]
+}
